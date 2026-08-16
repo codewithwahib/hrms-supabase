@@ -1179,27 +1179,27 @@ export default function HRSettingsPage() {
                                   <User className="w-4 h-4" />
                                   Personal Information
                                 </h4>
-                                <div className="bg-gray-50 p-3 space-y-2 text-sm tracking-wide">
+                                <div className="bg-gray-50  p-3 space-y-2 text-sm tracking-wide">
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Employee ID:</span>
-                                    <span className="font-medium">{employee.personalDetails?.employeeId || 'N/A'}</span>
+                                    <span className="font-medium text-black">{employee.personalDetails?.employeeId || 'N/A'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Full Name:</span>
-                                    <span className="font-medium">{employee.personalDetails?.fullName || 'N/A'}</span>
+                                    <span className="font-medium text-black">{employee.personalDetails?.fullName || 'N/A'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Department:</span>
-                                    <span className="font-medium">{employee.personalDetails?.department || 'N/A'}</span>
+                                    <span className="font-medium text-black">{employee.personalDetails?.department || 'N/A'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Position:</span>
-                                    <span className="font-medium">{employee.personalDetails?.position || 'N/A'}</span>
+                                    <span className="font-medium text-black">{employee.personalDetails?.position || 'N/A'}</span>
                                   </div>
                                   {employee.personalDetails?.phoneNumber && (
                                     <div className="flex justify-between">
                                       <span className="text-gray-500">Phone:</span>
-                                      <span className="font-medium">{employee.personalDetails.phoneNumber}</span>
+                                      <span className="font-medium text-black">{employee.personalDetails.phoneNumber}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1213,7 +1213,7 @@ export default function HRSettingsPage() {
                                 <div className="bg-gray-50 p-3 space-y-2 text-sm tracking-wide">
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Username:</span>
-                                    <span className="font-medium">{employee.username || 'Not set'}</span>
+                                    <span className="font-medium text-black">{employee.username || 'Not set'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Password:</span>
@@ -1283,7 +1283,7 @@ export default function HRSettingsPage() {
                                       ...formData, 
                                       newUsername: e.target.value 
                                     })}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
+                                    className="w-full pl-10 pr-4 text-black py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
                                     placeholder="Enter username"
                                   />
                                 </div>
@@ -1305,7 +1305,7 @@ export default function HRSettingsPage() {
                                       ...formData, 
                                       newPassword: e.target.value 
                                     })}
-                                    className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
+                                    className="w-full pl-10 pr-10 text-black py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
                                     placeholder="Enter new password (min 6 characters)"
                                     required
                                   />
@@ -1324,7 +1324,7 @@ export default function HRSettingsPage() {
                                   Confirm Password
                                 </label>
                                 <div className="relative">
-                                  <Lock className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                  <Lock className="w-5 h-5  absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                   <input
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={formData.confirmPassword}
@@ -1332,7 +1332,7 @@ export default function HRSettingsPage() {
                                       ...formData, 
                                       confirmPassword: e.target.value 
                                     })}
-                                    className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
+                                    className="w-full pl-10 text-black pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
                                     placeholder="Confirm new password"
                                     required
                                   />

@@ -334,7 +334,7 @@ export default function SettingsPage() {
                   disabled={saving}
                   autoComplete="username"
                   placeholder="Enter username"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
+                  className="w-full pl-10 text-black pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1 tracking-wide">
@@ -357,7 +357,7 @@ export default function SettingsPage() {
                   disabled={saving}
                   autoComplete="new-password"
                   placeholder="Enter new password (min 6 characters)"
-                  className="w-full pl-10 pr-20 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
+                  className="w-full pl-10 text-black pr-20 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
                 />
                 <button
                   type="button"
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                   disabled={saving}
                   autoComplete="new-password"
                   placeholder="Confirm new password"
-                  className="w-full pl-10 pr-20 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
+                  className="w-full pl-10 text-black pr-20 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide disabled:bg-gray-100"
                 />
                 <button
                   type="button"

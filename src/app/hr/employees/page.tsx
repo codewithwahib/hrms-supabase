@@ -492,10 +492,10 @@ export default function EmployeesPage() {
                   placeholder="Search by name, ID, department, position, phone, or CNIC..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm ${roboto.className} tracking-wide`}
+                  className={`w-full pl-10 text-black pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm ${roboto.className} tracking-wide`}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex text-black items-center gap-2">
                 <Filter className="w-4 h-4 text-gray-400" />
                 <select
                   value={selectedDepartment}

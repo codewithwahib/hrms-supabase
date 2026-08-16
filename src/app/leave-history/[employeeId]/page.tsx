@@ -508,7 +508,7 @@ export default function LeaveHistoryPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white shadow-sm p-4 mb-6">
+          <div className="bg-white text-black shadow-sm p-4 mb-6">
             <button
               onClick={() => setExpandedFilters(!expandedFilters)}
               className="flex items-center gap-2 text-gray-700 hover:text-[#0071BD] transition tracking-wider"

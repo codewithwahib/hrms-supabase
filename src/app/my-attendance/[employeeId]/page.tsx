@@ -1105,10 +1105,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import Footer from '@/app/components/footer'
+import Footer from '@/components/footer'
 import { client } from '@/sanity/lib/client'
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
-import NavbarDropdown from '@/app/components/navbar/page'
+import NavbarDropdown from '@/app/Navbar/page'
 import {
   Calendar,
   Clock,

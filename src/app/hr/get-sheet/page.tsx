@@ -1133,10 +1133,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Footer from '@/app/components/footer'
+import Footer from '@/components/footer'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { client } from '@/sanity/lib/client'
-import NavbarDropdown from '@/app/components/navbar/page'
+import NavbarDropdown from '@/components/navbar'
 import {
   RefreshCw,
   Calendar,
@@ -1153,7 +1153,9 @@ import {
   UserPlus,
   Printer,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  Palette,
+  FileText
 } from 'lucide-react'
 
 // Import Roboto font
@@ -1239,6 +1241,7 @@ interface AttendanceRecord {
   leaveReason?: string
   qualifications: string
   experience: string
+  isOnLeave: boolean
 }
 
 export default function GetSheetPage() {
@@ -1254,12 +1257,10 @@ export default function GetSheetPage() {
   const [expandedFilters, setExpandedFilters] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all')
   const [employeeNames, setEmployeeNames] = useState<{id: string, name: string, department: string}[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showEmployeeList, setShowEmployeeList] = useState(false)
-  const [selectedEmployeeData, setSelectedEmployeeData] = useState<Employee | null>(null)
+  const [showPrintOptions, setShowPrintOptions] = useState(false)
 
   // =====================================================
-  // Helper Functions - Moved BEFORE useCallback dependencies
+  // Helper Functions
   // =====================================================
 
   const getDayName = useCallback((dateStr: string) => {
@@ -1364,7 +1365,7 @@ export default function GetSheetPage() {
   }, [parseCoordinates])
 
   // =====================================================
-  // getEmployeeAttendance - Defined BEFORE it's used
+  // getEmployeeAttendance
   // =====================================================
 
   const getEmployeeAttendance = useCallback((employee: Employee, date: string): AttendanceRecord => {
@@ -1379,11 +1380,13 @@ export default function GetSheetPage() {
     let status: 'Present' | 'Absent' | 'Leave' | 'Half Day' = 'Absent'
     let leaveType = ''
     let leaveReason = ''
+    let isOnLeave = false
 
     if (leave) {
       status = 'Leave'
       leaveType = leave.leaveType || ''
       leaveReason = leave.reason || ''
+      isOnLeave = true
     } else if (checkIn && checkOut) {
       status = 'Present'
     } else if (checkIn && !checkOut) {
@@ -1391,6 +1394,12 @@ export default function GetSheetPage() {
     }
 
     const personal = employee.personalDetails
+
+    const displayCheckIn = isOnLeave ? '-' : (checkIn ? formatTime(checkIn.time) : '-')
+    const displayCheckOut = isOnLeave ? '-' : (checkOut ? formatTime(checkOut.time) : '-')
+    const displayTotalHours = isOnLeave ? '-' : calculateTotalHours(checkIn?.time || '', checkOut?.time || '')
+    const displayCheckInLocation = isOnLeave ? '-' : (checkIn?.location || '-')
+    const displayCheckOutLocation = isOnLeave ? '-' : (checkOut?.location || '-')
 
     return {
       employeeId: personal?.employeeId || '',
@@ -1407,21 +1416,22 @@ export default function GetSheetPage() {
       joiningDate: formatDate(personal?.joiningDate || ''),
       date: dateStr,
       day: getDayName(dateStr),
-      checkIn: checkIn ? formatTime(checkIn.time) : '-',
-      checkOut: checkOut ? formatTime(checkOut.time) : '-',
-      totalHours: calculateTotalHours(checkIn?.time || '', checkOut?.time || ''),
-      checkInLocation: checkIn?.location || '-',
-      checkOutLocation: checkOut?.location || '-',
+      checkIn: displayCheckIn,
+      checkOut: displayCheckOut,
+      totalHours: displayTotalHours,
+      checkInLocation: displayCheckInLocation,
+      checkOutLocation: displayCheckOutLocation,
       status,
       leaveType,
       leaveReason,
       qualifications: getQualificationsString(employee.qualifications),
-      experience: getExperienceString(employee.experience)
+      experience: getExperienceString(employee.experience),
+      isOnLeave
     }
   }, [formatDate, getDayName, formatTime, calculateTotalHours, getQualificationsString, getExperienceString])
 
   // =====================================================
-  // getSelectedEmployeeName - Defined BEFORE it's used
+  // getSelectedEmployeeName
   // =====================================================
 
   const getSelectedEmployeeName = useCallback(() => {
@@ -1431,7 +1441,45 @@ export default function GetSheetPage() {
   }, [employees, selectedEmployee])
 
   // =====================================================
-  // fetchEmployees - useCallback with proper dependencies
+  // getRowColor
+  // =====================================================
+
+  const getRowColor = useCallback((checkInTime: string, day: string, isOnLeave: boolean) => {
+    if (isOnLeave) return 'transparent'
+    
+    if (day === 'Sunday') return '#FFCCCC'
+    
+    if (!checkInTime || checkInTime === '-') return 'transparent'
+    
+    try {
+      const timeStr = checkInTime.replace(/\s/g, '')
+      const isPM = timeStr.includes('PM')
+      let hours = parseInt(timeStr.split(':')[0])
+      const minutes = parseInt(timeStr.split(':')[1]?.replace(/[AP]M/g, ''))
+      
+      if (isPM && hours !== 12) hours += 12
+      if (!isPM && hours === 12) hours = 0
+      
+      const totalMinutes = hours * 60 + (minutes || 0)
+      
+      if (totalMinutes < 600) {
+        return '#4A90D9'
+      } else if (totalMinutes >= 600 && totalMinutes < 630) {
+        return '#27AE60'
+      } else if (totalMinutes >= 630 && totalMinutes < 690) {
+        return '#F1C40F'
+      } else if (totalMinutes >= 690) {
+        return '#E74C3C'
+      }
+      
+      return 'transparent'
+    } catch {
+      return 'transparent'
+    }
+  }, [])
+
+  // =====================================================
+  // fetchEmployees
   // =====================================================
 
   const fetchEmployees = useCallback(async () => {
@@ -1517,10 +1565,10 @@ export default function GetSheetPage() {
     } finally {
       setLoading(false)
     }
-  }, []) // No dependencies needed
+  }, [])
 
   // =====================================================
-  // generateAttendanceSheet - WITH getEmployeeAttendance dependency
+  // generateAttendanceSheet
   // =====================================================
 
   const generateAttendanceSheet = useCallback(() => {
@@ -1559,10 +1607,10 @@ export default function GetSheetPage() {
 
     setAttendanceData(allRecords)
     setFilteredData(allRecords)
-  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee, getEmployeeAttendance]) // Added getEmployeeAttendance
+  }, [employees, fromDate, toDate, selectedDepartment, selectedEmployee, getEmployeeAttendance])
 
   // =====================================================
-  // LocationDisplay - WITH proper dependencies
+  // LocationDisplay
   // =====================================================
 
   const LocationDisplay = useCallback(({ location, label }: { location: string; label: string }) => {
@@ -1571,29 +1619,24 @@ export default function GetSheetPage() {
     }
 
     const hasCoords = isValidCoordinate(location)
-    const displayText = hasCoords ? '📍 View Location' : location.length > 30 ? location.substring(0, 30) + '...' : location
+    const displayText = hasCoords ? '📍' : location.length > 15 ? location.substring(0, 15) + '...' : location
 
     return (
       <div className="flex items-center gap-1">
         <button
           onClick={() => openGoogleMaps(location)}
-          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 text-sm transition-colors"
-          title={hasCoords ? 'Click to view on map' : 'Click to search on Google Maps'}
+          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-0.5 text-[10px] transition-colors"
+          title={location}
         >
-          <MapPin className="w-3 h-3" />
+          <MapPin className="w-2.5 h-2.5" />
           <span>{displayText}</span>
         </button>
-        {hasCoords && (
-          <span className="text-xs text-gray-400 ml-1" title="Coordinates">
-            ({location})
-          </span>
-        )}
       </div>
     )
   }, [isValidCoordinate, openGoogleMaps])
 
   // =====================================================
-  // getSummary - WITH proper dependencies
+  // getSummary
   // =====================================================
 
   const getSummary = useCallback(() => {
@@ -1607,87 +1650,44 @@ export default function GetSheetPage() {
   }, [filteredData])
 
   // =====================================================
-  // handlePrint - WITH getSelectedEmployeeName dependency
+  // handlePrint - With Reduced Column Widths
   // =====================================================
 
-  const handlePrint = useCallback(() => {
+  const handlePrintWithColor = useCallback((withColor: boolean) => {
+    setShowPrintOptions(false)
+    
     const data = filteredData
     const employeeName = selectedEmployee === 'all' ? 'All Employees' : getSelectedEmployeeName()
     const deptName = selectedDepartment !== 'all' ? selectedDepartment : 'All Departments'
 
-    const getRowColor = (checkInTime: string) => {
-      if (!checkInTime || checkInTime === '-') return 'transparent'
-      
-      try {
-        const timeStr = checkInTime.replace(/\s/g, '')
-        const isPM = timeStr.includes('PM')
-        let hours = parseInt(timeStr.split(':')[0])
-        const minutes = parseInt(timeStr.split(':')[1]?.replace(/[AP]M/g, ''))
-        
-        if (isPM && hours !== 12) hours += 12
-        if (!isPM && hours === 12) hours = 0
-        
-        const totalMinutes = hours * 60 + (minutes || 0)
-        
-        if (totalMinutes < 600) {
-          return '#4A90D9'
-        } else if (totalMinutes >= 600 && totalMinutes < 630) {
-          return '#27AE60'
-        } else if (totalMinutes >= 630 && totalMinutes < 690) {
-          return '#F1C40F'
-        } else if (totalMinutes >= 690) {
-          return '#E74C3C'
-        }
-        
-        return 'transparent'
-      } catch {
-        return 'transparent'
-      }
+    const getRowColorForPrint = (record: AttendanceRecord) => {
+      if (!withColor) return 'transparent'
+      return getRowColor(record.checkIn, record.day, record.isOnLeave)
     }
 
     let tableRows = ''
     data.forEach((record, index) => {
       const isSunday = record.day === 'Sunday'
-      const checkInColor = !isSunday ? getRowColor(record.checkIn) : 'transparent'
-      const rowBgColor = isSunday ? '#FFCCCC' : (checkInColor || 'transparent')
+      const rowColor = getRowColorForPrint(record)
+      const bgStyle = rowColor !== 'transparent' ? `background-color: ${rowColor};` : ''
       
-      if (isSunday) {
-        tableRows += `
-          <tr style="background-color: ${rowBgColor};">
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center; font-weight: bold; color: #FF0000;">Sunday</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;"></td>
-          </tr>
-        `
-      } else {
-        tableRows += `
-          <tr style="background-color: ${rowBgColor};">
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${index + 1}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.employeeId}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.name}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.department}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.designation}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.date}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.day}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.checkIn}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.checkOut}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.totalHours}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.status}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.leaveType || '-'}</td>
-            <td style="padding: 4px 6px; border: 1px solid #000; font-size: 8px; text-align: center;">${record.leaveReason || '-'}</td>
-          </tr>
-        `
-      }
+      tableRows += `
+        <tr style="${bgStyle}">
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${index + 1}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.employeeId}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.name}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.department}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.designation}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.date}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif; ${isSunday ? 'font-weight: bold; color: #FF0000;' : ''}">${record.day}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.checkIn}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.checkOut}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.totalHours}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.status}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.leaveType || '-'}</td>
+          <td style="padding: 2px 3px; border: 1px solid #000; font-size: 7px; text-align: center; font-family: 'Roboto', Arial, sans-serif;">${record.leaveReason || '-'}</td>
+        </tr>
+      `
     })
 
     const printHTML = `
@@ -1695,10 +1695,11 @@ export default function GetSheetPage() {
       <html>
         <head>
           <title>Attendance Sheet - ${employeeName}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
           <style>
             @page {
               size: A4 landscape;
-              margin: 10mm 8mm;
+              margin: 5mm 4mm;
             }
             * {
               box-sizing: border-box;
@@ -1706,7 +1707,7 @@ export default function GetSheetPage() {
               padding: 0;
             }
             body {
-              font-family: Arial, Helvetica, sans-serif;
+              font-family: 'Roboto', Arial, Helvetica, sans-serif;
               background: white;
               color: #000000;
               padding: 0;
@@ -1718,73 +1719,81 @@ export default function GetSheetPage() {
             }
             .print-header {
               text-align: center;
-              margin-bottom: 10px;
-              padding-bottom: 8px;
+              margin-bottom: 6px;
+              padding-bottom: 5px;
               border-bottom: 2px solid #000000;
             }
             .print-header .company-name {
-              font-size: 14px;
+              font-size: 11px;
               font-weight: 700;
               color: #000000;
               letter-spacing: 0.5px;
               text-transform: uppercase;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             .print-header .title {
-              font-size: 12px;
+              font-size: 10px;
               font-weight: 700;
               color: #000000;
-              margin-top: 2px;
+              margin-top: 1px;
               letter-spacing: 0.5px;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             .print-header .sub-info {
-              font-size: 9px;
-              color: #000000;
-              margin-top: 4px;
-              font-weight: 500;
-            }
-            .print-header .date-range {
-              font-size: 9px;
+              font-size: 7px;
               color: #000000;
               margin-top: 2px;
+              font-weight: 500;
+              font-family: 'Roboto', Arial, sans-serif;
+            }
+            .print-header .date-range {
+              font-size: 7px;
+              color: #000000;
+              margin-top: 1px;
               font-weight: 400;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 8px;
+              font-size: 7px;
               margin-top: 2px;
             }
             table thead th {
               background: #C4BD97;
               font-weight: 700;
               text-align: center;
-              padding: 5px 4px;
+              padding: 3px 2px;
               border: 1px solid #000000;
               text-transform: uppercase;
-              font-size: 7px;
-              letter-spacing: 0.3px;
+              font-size: 6px;
+              letter-spacing: 0.2px;
               color: #000000;
               white-space: nowrap;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             table tbody td {
-              padding: 4px 6px;
+              padding: 2px 3px;
               border: 1px solid #000000;
               color: #000000;
               vertical-align: middle;
               text-align: center;
-              font-size: 8px;
+              font-size: 7px;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             .print-footer {
-              margin-top: 12px;
-              padding-top: 8px;
+              margin-top: 6px;
+              padding-top: 4px;
               border-top: 1px solid #000000;
               text-align: center;
-              font-size: 8px;
+              font-size: 6px;
               color: #000000;
               letter-spacing: 0.3px;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             .print-footer .footer-text {
               font-weight: 400;
+              font-family: 'Roboto', Arial, sans-serif;
             }
             @media print {
               body { 
@@ -1803,27 +1812,35 @@ export default function GetSheetPage() {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
+              tr[style*="background-color"] {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
             }
           </style>
         </head>
         <body>
           <div class="print-container">
+            <div class="print-header">
+              <div class="company-name">A to Zee Switchgear Engineering (SMC) Pvt. Ltd.</div>
+              <div class="title">EMPLOYEE ATTENDANCE SHEET</div>
+            </div>
             <table>
               <thead>
                 <tr>
-                  <th style="width:3%">#</th>
-                  <th style="width:9%">Employee ID</th>
-                  <th style="width:12%">Name</th>
-                  <th style="width:9%">Department</th>
-                  <th style="width:9%">Designation</th>
-                  <th style="width:8%">Date</th>
-                  <th style="width:8%">Day</th>
-                  <th style="width:8%">Check In</th>
-                  <th style="width:8%">Check Out</th>
-                  <th style="width:8%">Total Hours</th>
-                  <th style="width:8%">Status</th>
-                  <th style="width:8%">Leave Type</th>
-                  <th style="width:12%">Leave Reason</th>
+                  <th style="width:1%">#</th>
+                  <th style="width:2%">Emp ID</th>
+                  <th style="width:6%">Name</th>
+                  <th style="width:3%">Dept</th>
+                  <th style="width:5%">Designation</th>
+                  <th style="width:3%">Date</th>
+                  <th style="width:3%">Day</th>
+                  <th style="width:3%">Check In</th>
+                  <th style="width:3%">Check Out</th>
+                  <th style="width:3%">Hours</th>
+                  <th style="width:3%">Status</th>
+                  <th style="width:5%">Leave Type</th>
+                  <th style="width:7%">Leave Reason</th>
                 </tr>
               </thead>
               <tbody>
@@ -1853,7 +1870,7 @@ export default function GetSheetPage() {
 
     printWindow.document.write(printHTML)
     printWindow.document.close()
-  }, [filteredData, selectedEmployee, selectedDepartment, getSelectedEmployeeName]) // Added getSelectedEmployeeName
+}, [filteredData, selectedEmployee, selectedDepartment, getSelectedEmployeeName, getRowColor])
 
   // =====================================================
   // USE EFFECTS
@@ -1879,11 +1896,6 @@ export default function GetSheetPage() {
   // =====================================================
 
   const summary = getSummary()
-
-  const filteredEmployees = employeeNames.filter(emp => 
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.id.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   if (loading) {
     return (
@@ -1917,129 +1929,190 @@ export default function GetSheetPage() {
     <>
     <ProtectedRoute allowedUser='hr'>
     <NavbarDropdown/>
-    <div className={`min-h-screen bg-gray-50 p-6 ${roboto.className}`}>
-      <div className="max-w-7xl mx-auto">
+    <div className={`min-h-screen bg-gray-50 p-2 ${roboto.className}`}>
+      <div className="max-w-full mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="mb-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div className="flex items-center gap-2">
               <div>
-                <h1 className="text-3xl font-bold text-[#0071BD] tracking-wider">
-                  Employee Attendance Sheet
+                <h1 className="text-lg font-bold text-[#0071BD] tracking-wider">
+                  Attendance Sheet
                 </h1>
-                <p className="text-sm text-gray-500 tracking-wide mt-1">
+                <p className="text-[10px] text-gray-500 tracking-wide">
                   {selectedEmployee === 'all' 
-                    ? 'Generate attendance report for all employees' 
-                    : `Generate attendance report for ${getSelectedEmployeeName()}`
+                    ? 'All employees' 
+                    : getSelectedEmployeeName()
                   }
                 </p>
               </div>
             </div>
             
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={fetchEmployees}
-                className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-2 tracking-wider"
+                className="px-2 py-1 text-xs bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1 tracking-wider"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3 h-3" />
                 Refresh
               </button>
               <button
-                onClick={handlePrint}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-2 tracking-wider"
+                onClick={() => setShowPrintOptions(true)}
+                className="px-2 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-1 tracking-wider"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-3 h-3" />
                 Print
               </button>
             </div>
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white shadow-sm p-4">
-            <div className="text-sm text-[#0071BD] tracking-wide">Total Records</div>
-            <div className="text-2xl font-bold text-[#0071BD] tracking-wider">{summary.total}</div>
-          </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="text-sm text-green-600 tracking-wide flex items-center gap-1">
-              <UserCheck className="w-4 h-4" /> Present
+        {/* Print Options Modal */}
+        {showPrintOptions && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800 tracking-wider flex items-center gap-2">
+                  <Printer className="w-5 h-5 text-[#0071BD]" />
+                  Print Options
+                </h2>
+                <button
+                  onClick={() => setShowPrintOptions(false)}
+                  className="p-1 hover:bg-gray-200 rounded-lg transition"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <p className="text-sm text-gray-600 tracking-wide mb-4">
+                Select how you want to print the attendance sheet:
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => handlePrintWithColor(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-lg flex items-center justify-center">
+                    <Palette className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-gray-800 tracking-wide">With Colors</p>
+                    <p className="text-xs text-gray-500 tracking-wide">Show time-based colors (Blue, Green, Yellow, Red)</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handlePrintWithColor(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition group"
+                >
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-gray-800 tracking-wide">Without Colors</p>
+                    <p className="text-xs text-gray-500 tracking-wide">Plain white background, no color coding</p>
+                  </div>
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowPrintOptions(false)}
+                className="w-full mt-4 px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 transition tracking-wider text-sm rounded-lg"
+              >
+                Cancel
+              </button>
             </div>
-            <div className="text-2xl font-bold text-green-700 tracking-wider">{summary.present}</div>
           </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="text-sm text-red-600 tracking-wide flex items-center gap-1">
-              <UserX className="w-4 h-4" /> Absent
-            </div>
-            <div className="text-2xl font-bold text-red-700 tracking-wider">{summary.absent}</div>
+        )}
+
+        {/* Summary Cards - Smaller */}
+        <div className="grid grid-cols-5 gap-1.5 mb-2">
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="text-[10px] text-[#0071BD] tracking-wide">Total</div>
+            <div className="text-base font-bold text-[#0071BD] tracking-wider">{summary.total}</div>
           </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="text-sm text-blue-600 tracking-wide flex items-center gap-1">
-              <UserMinus className="w-4 h-4" /> Leave
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="text-[10px] text-green-600 tracking-wide flex items-center gap-0.5">
+              <UserCheck className="w-2.5 h-2.5" /> P
             </div>
-            <div className="text-2xl font-bold text-blue-700 tracking-wider">{summary.leave}</div>
+            <div className="text-base font-bold text-green-700 tracking-wider">{summary.present}</div>
           </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="text-sm text-yellow-600 tracking-wide flex items-center gap-1">
-              <UserPlus className="w-4 h-4" /> Half Day
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="text-[10px] text-red-600 tracking-wide flex items-center gap-0.5">
+              <UserX className="w-2.5 h-2.5" /> A
             </div>
-            <div className="text-2xl font-bold text-yellow-700 tracking-wider">{summary.halfDay}</div>
+            <div className="text-base font-bold text-red-700 tracking-wider">{summary.absent}</div>
+          </div>
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="text-[10px] text-blue-600 tracking-wide flex items-center gap-0.5">
+              <UserMinus className="w-2.5 h-2.5" /> L
+            </div>
+            <div className="text-base font-bold text-blue-700 tracking-wider">{summary.leave}</div>
+          </div>
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="text-[10px] text-yellow-600 tracking-wide flex items-center gap-0.5">
+              <UserPlus className="w-2.5 h-2.5" /> H
+            </div>
+            <div className="text-base font-bold text-yellow-700 tracking-wider">{summary.halfDay}</div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white shadow-sm p-4 mb-6">
+        {/* Filters - Smaller */}
+        <div className="bg-white text-black shadow-sm p-1.5 mb-2">
           <button
             onClick={() => setExpandedFilters(!expandedFilters)}
-            className="flex items-center gap-2 text-gray-700 hover:text-[#0071BD] transition tracking-wider"
+            className="flex items-center gap-1 text-gray-700 hover:text-[#0071BD] transition tracking-wider text-xs"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-3 h-3" />
             {expandedFilters ? 'Hide Filters' : 'Show Filters'}
-            {expandedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {expandedFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
 
           {expandedFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
+                <label className="block text-[10px] font-medium text-gray-700 tracking-wide mb-0.5">
                   From Date
                 </label>
                 <div className="relative">
-                  <Calendar className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Calendar className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                    className="w-full pl-6 pr-1.5 py-1 text-xs border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
+                <label className="block text-[10px] font-medium text-gray-700 tracking-wide mb-0.5">
                   To Date
                 </label>
                 <div className="relative">
-                  <Calendar className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Calendar className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                    className="w-full pl-6 pr-1.5 py-1 text-xs border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
+                <label className="block text-[10px] font-medium text-gray-700 tracking-wide mb-0.5">
                   Department
                 </label>
                 <div className="relative">
-                  <Building className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Building className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <select
                     value={selectedDepartment}
                     onChange={(e) => setSelectedDepartment(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                    className="w-full pl-6 pr-1.5 py-1 text-xs border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
                   >
                     <option value="all">All Departments</option>
                     {departments.map(dept => (
@@ -2050,15 +2123,15 @@ export default function GetSheetPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
-                  Select Employee
+                <label className="block text-[10px] font-medium text-gray-700 tracking-wide mb-0.5">
+                  Employee
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <User className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <select
                     value={selectedEmployee}
                     onChange={(e) => setSelectedEmployee(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                    className="w-full pl-6 pr-1.5 py-1 text-xs border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
                   >
                     <option value="all">All Employees</option>
                     {employeeNames.map(emp => (
@@ -2073,81 +2146,56 @@ export default function GetSheetPage() {
           )}
         </div>
 
-        {/* Employee Selection Quick View */}
-        <div className="bg-white shadow-sm p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-[#0071BD]" />
-              <span className="font-medium text-gray-700 tracking-wide">
-                {selectedEmployee === 'all' 
-                  ? `Showing all ${employees.length} employees` 
-                  : `Selected: ${getSelectedEmployeeName()}`
-                }
-              </span>
-              {selectedEmployee !== 'all' && (
-                <button
-                  onClick={() => setSelectedEmployee('all')}
-                  className="text-sm text-[#0071BD] hover:underline tracking-wide"
-                >
-                  Clear Selection
-                </button>
-              )}
-            </div>
-            <div className="text-sm text-gray-500 tracking-wide">
-              {filteredData.length} records found
-            </div>
-          </div>
-        </div>
-
-        {/* Data Table */}
+        {/* Data Table - Compact */}
         <div className="bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-[10px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Reason</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">#</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Emp ID</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Dept</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Leave Type</th>
+                  <th className="px-1.5 py-1 text-left text-[9px] font-medium text-gray-500 uppercase tracking-wider">Leave Reason</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="px-4 py-8 text-center text-gray-500">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="w-12 h-12 text-gray-300" />
-                        <p className="tracking-wide">No attendance data found for the selected period</p>
-                        <p className="text-sm text-gray-400">Try adjusting your date range or filters</p>
+                    <td colSpan={14} className="px-2 py-3 text-center text-gray-500 text-xs">
+                      <div className="flex flex-col items-center gap-1">
+                        <Users className="w-6 h-6 text-gray-300" />
+                        <p className="tracking-wide">No data found</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filteredData.map((record, index) => (
                     <tr key={index} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-3 text-sm text-gray-500 tracking-wide">{index + 1}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-800 tracking-wide">{record.employeeId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700 tracking-wide">{record.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.department}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.designation}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.date}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.day}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.checkIn}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.checkOut}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.totalHours}</td>
-                      <td className="px-4 py-3 text-sm">
-                        {record.checkInLocation !== '-' && record.checkOutLocation !== '-' ? (
-                          <div className="space-y-1">
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-500 tracking-wide">{index + 1}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] font-medium text-gray-800 tracking-wide">{record.employeeId}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-700 tracking-wide">{record.name}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.department}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.designation}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.date}</td>
+                      <td className={`px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide ${record.day === 'Sunday' ? 'font-bold text-red-600' : ''}`}>{record.day}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.checkIn}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.checkOut}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.totalHours}</td>
+                      <td className="px-1.5 py-0.5 text-[10px]">
+                        {record.isOnLeave ? (
+                          <span className="text-gray-400">-</span>
+                        ) : record.checkInLocation !== '-' && record.checkOutLocation !== '-' ? (
+                          <div className="space-y-0.5">
                             <LocationDisplay location={record.checkInLocation} label="In" />
                             <LocationDisplay location={record.checkOutLocation} label="Out" />
                           </div>
@@ -2159,8 +2207,8 @@ export default function GetSheetPage() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-xs font-medium tracking-wide ${
+                      <td className="px-1.5 py-0.5">
+                        <span className={`px-1 py-0.5 text-[9px] font-medium tracking-wide ${
                           record.status === 'Present' ? 'bg-green-100 text-green-700' :
                           record.status === 'Absent' ? 'bg-red-100 text-red-700' :
                           record.status === 'Leave' ? 'bg-blue-100 text-blue-700' :
@@ -2169,8 +2217,8 @@ export default function GetSheetPage() {
                           {record.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.leaveType || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tracking-wide">{record.leaveReason || '-'}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.leaveType || '-'}</td>
+                      <td className="px-1.5 py-0.5 text-[10px] text-gray-600 tracking-wide">{record.leaveReason || '-'}</td>
                     </tr>
                   ))
                 )}
@@ -2181,28 +2229,27 @@ export default function GetSheetPage() {
 
         {/* Footer */}
         {filteredData.length > 0 && (
-          <div className="mt-6 bg-white shadow-sm p-4">
-            <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 tracking-wide">
+          <div className="mt-1.5 bg-white shadow-sm p-1.5">
+            <div className="flex flex-wrap items-center justify-between text-[10px] text-gray-600 tracking-wide">
               <div>
-                Showing {filteredData.length} records
-                {selectedEmployee !== 'all' && ` for ${getSelectedEmployeeName()}`}
+                {filteredData.length} records
               </div>
-              <div className="flex items-center gap-6">
-                <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-green-500"></span>
-                  Present: {summary.present}
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-0.5">
+                  <span className="w-2 h-2 bg-green-500"></span>
+                  P: {summary.present}
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-red-500"></span>
-                  Absent: {summary.absent}
+                <span className="flex items-center gap-0.5">
+                  <span className="w-2 h-2 bg-red-500"></span>
+                  A: {summary.absent}
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-blue-500"></span>
-                  Leave: {summary.leave}
+                <span className="flex items-center gap-0.5">
+                  <span className="w-2 h-2 bg-blue-500"></span>
+                  L: {summary.leave}
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-yellow-500"></span>
-                  Half Day: {summary.halfDay}
+                <span className="flex items-center gap-0.5">
+                  <span className="w-2 h-2 bg-yellow-500"></span>
+                  H: {summary.halfDay}
                 </span>
               </div>
             </div>
@@ -2210,30 +2257,30 @@ export default function GetSheetPage() {
         )}
 
         {/* Quick Stats */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white shadow-sm p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Users className="w-4 h-4 text-[#0071BD]" />
-              <span className="font-medium">Total Employees</span>
+        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="flex items-center gap-1 text-[10px] text-gray-600">
+              <Users className="w-3 h-3 text-[#0071BD]" />
+              <span className="font-medium">Employees</span>
             </div>
-            <div className="text-2xl font-bold text-[#0071BD] mt-1">{employees.length}</div>
+            <div className="text-base font-bold text-[#0071BD]">{employees.length}</div>
           </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Calendar className="w-4 h-4 text-[#0071BD]" />
-              <span className="font-medium">Date Range</span>
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="flex items-center gap-1 text-[10px] text-gray-600">
+              <Calendar className="w-3 h-3 text-[#0071BD]" />
+              <span className="font-medium">Range</span>
             </div>
-            <div className="text-sm font-medium text-gray-700 mt-1">
+            <div className="text-[10px] font-medium text-gray-700">
               {formatDate(fromDate)} - {formatDate(toDate)}
             </div>
           </div>
-          <div className="bg-white shadow-sm p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Building className="w-4 h-4 text-[#0071BD]" />
-              <span className="font-medium">Departments</span>
+          <div className="bg-white shadow-sm p-1.5">
+            <div className="flex items-center gap-1 text-[10px] text-gray-600">
+              <Building className="w-3 h-3 text-[#0071BD]" />
+              <span className="font-medium">Depts</span>
             </div>
-            <div className="text-sm font-medium text-gray-700 mt-1">
-              {departments.length} departments
+            <div className="text-base font-medium text-gray-700">
+              {departments.length}
             </div>
           </div>
         </div>

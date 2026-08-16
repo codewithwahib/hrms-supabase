@@ -1,11 +1,12 @@
+// // src/components/NavbarDropdown.tsx
 // 'use client'
 
 // import { useState, useEffect, useRef } from 'react'
 // import Link from 'next/link'
 // import Image from 'next/image'
 // import { usePathname, useRouter } from 'next/navigation'
-// import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
 // import { client } from '@/sanity/lib/client'
+// import { useAuth } from '@/context/AuthContext'
 // import {
 //   LayoutDashboard,
 //   CalendarClock,
@@ -17,6 +18,8 @@
 //   LogOut,
 //   User,
 //   Bell,
+//   UserPlus,
+//   FileSpreadsheet,
 //   CheckCircle,
 //   XCircle,
 //   Clock,
@@ -25,11 +28,8 @@
 //   LogIn,
 //   LogOut as LogOutIcon,
 //   RefreshCw,
-//   ChevronDown,
-//   ClipboardCheck,
-//   History,
-//   FileText,
-//   ListChecks,
+//   Key,
+//   Users,
 // } from 'lucide-react'
 
 // // Import Roboto font
@@ -46,7 +46,6 @@
 //   name: string
 //   href: string
 //   icon: React.ReactNode
-//   children?: NavItem[]
 // }
 
 // interface Notification {
@@ -87,8 +86,6 @@
 //     department: string
 //     position: string
 //   }
-//   username: string
-//   password: string
 //   checkIn?: Array<{ time: string; location: string }>
 //   checkOut?: Array<{ time: string; location: string }>
 //   leaves?: LeaveRequest[]
@@ -97,124 +94,50 @@
 // export default function NavbarDropdown() {
 //   const pathname = usePathname()
 //   const router = useRouter()
+//   const { logout } = useAuth() // Add this line
 //   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 //   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 //   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
 //   const [notifications, setNotifications] = useState<Notification[]>([])
 //   const [unreadCount, setUnreadCount] = useState(0)
 //   const [isRefreshing, setIsRefreshing] = useState(false)
-//   const [employeeId, setEmployeeId] = useState<string>('')
-//   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
 //   const notificationRef = useRef<HTMLDivElement>(null)
-//   const profileRef = useRef<HTMLDivElement>(null)
-//   const attendanceRef = useRef<HTMLDivElement>(null)
-//   const leavesRef = useRef<HTMLDivElement>(null)
-
-//   // Get employeeId from localStorage or URL
-//   useEffect(() => {
-//     const storedEmployeeId = localStorage.getItem('employeeId')
-//     if (storedEmployeeId) {
-//       setEmployeeId(storedEmployeeId)
-//     } else {
-//       const pathParts = pathname?.split('/') || []
-//       const idIndex = pathParts.findIndex(part => part === 'dashboard' || part === 'attendance' || part === 'leaves' || part === 'settings')
-//       if (idIndex !== -1 && pathParts[idIndex + 1]) {
-//         setEmployeeId(pathParts[idIndex + 1])
-//         localStorage.setItem('employeeId', pathParts[idIndex + 1])
-//       }
-//     }
-//   }, [pathname])
-
-//   // Fetch current employee data
-//   useEffect(() => {
-//     const fetchCurrentEmployee = async () => {
-//       try {
-//         if (!employeeId) return
-        
-//         const query = `
-//           *[_type == "employee" && personalDetails.employeeId == $employeeId][0] {
-//             _id,
-//             personalDetails {
-//               fullName,
-//               employeeId,
-//               department,
-//               position
-//             },
-//             username,
-//             password
-//           }
-//         `
-//         const data = await client.fetch(query, { employeeId })
-//         if (data) {
-//           setCurrentEmployee(data)
-//         }
-//       } catch (error) {
-//         console.error('Error fetching employee data:', error)
-//       }
-//     }
-//     fetchCurrentEmployee()
-//   }, [employeeId])
 
 //   const navigation: NavItem[] = [
 //     {
 //       name: 'DASHBOARD',
-//       href: employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard',
+//       href: '/hr/dashboard',
 //       icon: <LayoutDashboard className="w-5 h-5" />
 //     },
 //     {
+//       name: 'EMPLOYEES',
+//       href: '/hr/employees',
+//       icon: <Users className="w-5 h-5" />
+//     },
+//     {
 //       name: 'ATTENDANCE',
-//       href: '#',
-//       icon: <CalendarClock className="w-5 h-5" />,
-//       children: [
-//         {
-//           name: 'Mark Attendance',
-//           href: employeeId ? `/attendance/${employeeId}` : '/hr/attendance',
-//           icon: <ClipboardCheck className="w-4 h-4" />
-//         },
-//         {
-//           name: 'Attendance History',
-//           href: employeeId ? `/attendance-history/${employeeId}` : '/hr/attendance-history',
-//           icon: <History className="w-4 h-4" />
-//         }
-//       ]
+//       href: '/hr/attendance',
+//       icon: <CalendarClock className="w-5 h-5" />
 //     },
 //     {
 //       name: 'LEAVES',
-//       href: '#',
-//       icon: <CalendarDays className="w-5 h-5" />,
-//       children: [
-//         {
-//           name: 'Apply Leave',
-//           href: employeeId ? `/leaves/${employeeId}` : '/hr/leaves',
-//           icon: <FileText className="w-4 h-4" />
-//         },
-//         {
-//           name: 'Leave History',
-//           href: employeeId ? `/leave-history/${employeeId}` : '/hr/leave-history',
-//           icon: <ListChecks className="w-4 h-4" />
-//         }
-//       ]
+//       href: '/hr/leaves',
+//       icon: <CalendarDays className="w-5 h-5" />
 //     },
 //     {
 //       name: 'PAYROLL',
-//       href: employeeId ? `/` : '/',
+//       href: '/',
 //       icon: <Wallet className="w-5 h-5" />
 //     },
 //     {
 //       name: 'SETTINGS',
-//       href: employeeId ? `/settings/${employeeId}` : '/hr/settings',
+//       href: '/hr/settings',
 //       icon: <Settings className="w-5 h-5" />
 //     }
 //   ]
 
 //   const isActive = (href: string) => {
-//     if (href === '#') return false
 //     return pathname === href || pathname?.startsWith(href + '/')
-//   }
-
-//   const isChildActive = (children?: NavItem[]) => {
-//     if (!children) return false
-//     return children.some(child => isActive(child.href))
 //   }
 
 //   // Load notifications from localStorage on mount
@@ -222,28 +145,16 @@
 //     loadNotifications()
 //     fetchNotifications()
     
+//     // Check for changes every 30 seconds
 //     const interval = setInterval(fetchNotifications, 30000)
 //     return () => clearInterval(interval)
 //   }, [fetchNotifications])
 
-//   // Close dropdowns when clicking outside
+//   // Close notification dropdown when clicking outside
 //   useEffect(() => {
 //     const handleClickOutside = (event: MouseEvent) => {
 //       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
 //         setIsNotificationOpen(false)
-//       }
-//       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-//         setIsProfileDropdownOpen(false)
-//       }
-//       // Close attendance dropdown
-//       const attendanceDropdown = document.getElementById('dropdown-ATTENDANCE')
-//       if (attendanceDropdown && attendanceRef.current && !attendanceRef.current.contains(event.target as Node)) {
-//         attendanceDropdown.style.display = 'none'
-//       }
-//       // Close leaves dropdown
-//       const leavesDropdown = document.getElementById('dropdown-LEAVES')
-//       if (leavesDropdown && leavesRef.current && !leavesRef.current.contains(event.target as Node)) {
-//         leavesDropdown.style.display = 'none'
 //       }
 //     }
 //     document.addEventListener('mousedown', handleClickOutside)
@@ -314,12 +225,17 @@
 //       const now = new Date()
 //       const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
 
+//       // Get all existing notification IDs to avoid duplicates
 //       const existingIds = new Set(notifications.map(n => n.id))
 
+//       // Check for leaves
 //       data.forEach(employee => {
 //         employee.leaves?.forEach(leave => {
+//           // Only process if status is not 'cancelled' or we want to show it
 //           if (leave.status === 'pending' || leave.status === 'approved' || leave.status === 'rejected') {
 //             const notifId = `leave_${employee._id}_${leave._key}`
+            
+//             // Skip if already exists
 //             if (existingIds.has(notifId)) return
             
 //             let title = ''
@@ -358,6 +274,7 @@
 //         })
 //       })
 
+//       // Check for check-ins (last 5 minutes)
 //       data.forEach(employee => {
 //         employee.checkIn?.forEach(checkIn => {
 //           const checkInTime = new Date(checkIn.time)
@@ -380,6 +297,7 @@
 //           }
 //         })
 
+//         // Check for check-outs (last 5 minutes)
 //         employee.checkOut?.forEach(checkOut => {
 //           const checkOutTime = new Date(checkOut.time)
 //           if (checkOutTime > fiveMinutesAgo) {
@@ -402,12 +320,17 @@
 //         })
 //       })
 
+//       // Merge with existing notifications and save
 //       if (newNotifications.length > 0) {
 //         const allNotifications = [...newNotifications, ...notifications]
-//         allNotifications.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+//         allNotifications.sort((a, b) => 
+//           new Date(b.time).getTime() - new Date(a.time).getTime()
+//         )
+//         // Limit to latest 100 notifications
 //         const limitedNotifications = allNotifications.slice(0, 100)
 //         saveNotifications(limitedNotifications)
         
+//         // Show browser notification if supported
 //         if (newNotifications.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
 //           newNotifications.forEach(n => {
 //             new Notification(n.title, {
@@ -429,7 +352,9 @@
 //   }
 
 //   const markAsRead = (id: string) => {
-//     const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n)
+//     const updated = notifications.map(n => 
+//       n.id === id ? { ...n, read: true } : n
+//     )
 //     saveNotifications(updated)
 //   }
 
@@ -516,68 +441,40 @@
 //     }
 //   }
 
-//   // Get display name and designation from employee data
-//   const displayName = currentEmployee?.personalDetails?.fullName || 'Employee'
-//   const displayDesignation = currentEmployee?.personalDetails?.position || 'Employee'
-
-//   const toggleDropdown = (dropdownId: string) => {
-//     const dropdown = document.getElementById(dropdownId)
-//     if (dropdown) {
-//       const isOpen = dropdown.style.display === 'block'
-//       // Close all other dropdowns first
-//       document.querySelectorAll('.nav-dropdown').forEach(el => {
-//         (el as HTMLElement).style.display = 'none'
-//       })
-//       dropdown.style.display = isOpen ? 'none' : 'block'
-//     }
-//   }
-
-//   // Updated Logout Handler with Confirmation
-//   const handleLogout = () => {
+//   // Updated logout handler
+//   const handleLogout = async () => {
 //     // Close dropdowns
 //     setIsProfileDropdownOpen(false)
 //     setIsMobileMenuOpen(false)
     
-//     // Show confirmation dialog
-//     if (window.confirm('Are you sure you want to logout?')) {
-//       // Clear all localStorage items
-//       localStorage.removeItem('employeeData')
-//       localStorage.removeItem('employeeLogin')
-//       localStorage.removeItem('employeeId')
-//       localStorage.removeItem('notifications')
-//       localStorage.removeItem('hrms_user')
-      
-//       // Clear session storage if any
-//       sessionStorage.clear()
-      
-//       // Close notification dropdown if open
-//       setIsNotificationOpen(false)
-      
-//       // Redirect to main page (login page)
-//       router.push('/')
-      
-//       // Optional: Show logout success message
-//       // You can add a toast notification here if you have one
-//     }
+//     // Call the logout function from AuthContext
+//     await logout()
+    
+//     // Clear any additional localStorage items
+//     localStorage.removeItem('employeeData')
+//     localStorage.removeItem('employeeLogin')
+//     localStorage.removeItem('notifications')
+    
+//     // Navigate to login page
+//     router.push('/login')
 //   }
 
 //   return (
 //     <>
-//     <ProtectedEmployeeRoute allowedRole='employee'>
-//             {/* Top Navigation Bar - White Background */}
+//       {/* Top Navigation Bar - White Background */}
 //       <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md border-b border-gray-200">
 //         <div className="flex items-center justify-between px-4 h-16">
 //           {/* Left Section - Logo with Vertical Line */}
 //           <div className="flex items-center gap-3">
 //             <button
 //               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-//               className="p-1.5 rounded-lg hover:bg-gray-200 transition lg:hidden"
+//               className="p-1.5 rounded-lg hover:bg-gray-100 transition lg:hidden"
 //             >
 //               <Menu className="w-5 h-5 text-gray-700" />
 //             </button>
 
 //             {/* Logo */}
-//             <Link href={employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard'} className="flex items-center">
+//             <Link href="/hr/dashboard" className="flex items-center">
 //               <div className="relative w-32 h-16 flex-shrink-0">
 //                 <Image
 //                   src="/logo.png"
@@ -596,106 +493,33 @@
 //           {/* Center - Navigation Links */}
 //           <div className="hidden lg:flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
 //             {navigation.map((item) => (
-//               <div key={item.name} className="relative">
-//                 {item.children ? (
-//                   // Dropdown Menu - Same design as profile dropdown
-//                   <div 
-//                     ref={item.name === 'ATTENDANCE' ? attendanceRef : leavesRef}
-//                     className="relative"
-//                   >
-//                     <button
-//                       onClick={() => toggleDropdown(`dropdown-${item.name}`)}
-//                       className={`
-//                         flex flex-col items-center gap-0.5 min-w-[65px] relative py-1
-//                         ${isChildActive(item.children)
-//                           ? 'text-blue-700'
-//                           : 'text-gray-500 hover:text-blue-700'
-//                         }
-//                       `}
-//                     >
-//                       <span className={`
-//                         transition-colors duration-200
-//                         ${isChildActive(item.children)
-//                           ? 'text-blue-700'
-//                           : 'text-gray-400 hover:text-blue-700'
-//                         }
-//                       `}>
-//                         {item.icon}
-//                       </span>
-//                       <span className={`
-//                         text-[9px] font-medium tracking-wide transition-colors duration-200 flex items-center gap-0.5
-//                         ${isChildActive(item.children)
-//                           ? 'text-blue-700'
-//                           : 'text-gray-500'
-//                         }
-//                       `}>
-//                         {item.name}
-//                         <ChevronDown className="w-3 h-3" />
-//                       </span>
-//                     </button>
-
-//                     {/* Dropdown Menu - Same style as profile dropdown */}
-//                     <div
-//                       id={`dropdown-${item.name}`}
-//                       className="nav-dropdown absolute left-1/2 transform -translate-x-1/2 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 hidden"
-//                     >
-//                       {item.children.map((child) => (
-//                         <Link
-//                           key={child.name}
-//                           href={child.href}
-//                           className={`
-//                             flex items-center gap-3 px-4 py-2.5 transition
-//                             ${isActive(child.href)
-//                               ? 'bg-blue-100 text-blue-700'
-//                               : 'text-gray-700 hover:bg-gray-200 hover:text-blue-700'
-//                             }
-//                           `}
-//                           onClick={() => {
-//                             // Close dropdown after clicking
-//                             const dropdown = document.getElementById(`dropdown-${item.name}`)
-//                             if (dropdown) dropdown.style.display = 'none'
-//                           }}
-//                         >
-//                           <span className={isActive(child.href) ? 'text-blue-700' : 'text-gray-400'}>
-//                             {child.icon}
-//                           </span>
-//                           <span className={`text-sm font-medium ${roboto.className} tracking-wide`}>
-//                             {child.name}
-//                           </span>
-//                         </Link>
-//                       ))}
-//                     </div>
-//                   </div>
-//                 ) : (
-//                   // Regular Link
-//                   <Link
-//                     href={item.href}
-//                     className={`
-//                       flex flex-col items-center gap-0.5 min-w-[65px] relative py-1
-//                       ${isActive(item.href)
-//                         ? 'text-blue-700'
-//                         : 'text-gray-500 hover:text-blue-700'
-//                       }
-//                     `}
-//                   >
-//                     <span className={`
-//                       transition-colors duration-200
-//                       ${isActive(item.href)
-//                         ? 'text-blue-700'
-//                         : 'text-gray-400 hover:text-blue-700'
-//                       }
-//                     `}>
-//                       {item.icon}
-//                     </span>
-//                     <span className={`
-//                       text-[9px] font-medium tracking-wide transition-colors duration-200
-//                       ${isActive(item.href) ? 'text-blue-700' : 'text-gray-500'}
-//                     `}>
-//                       {item.name}
-//                     </span>
-//                   </Link>
-//                 )}
-//               </div>
+//               <Link
+//                 key={item.name}
+//                 href={item.href}
+//                 className={`
+//                   flex flex-col items-center gap-0.5 min-w-[65px] relative
+//                   ${isActive(item.href)
+//                     ? 'text-blue-700'
+//                     : 'text-gray-500'
+//                   }
+//                 `}
+//               >
+//                 <span className={`
+//                   transition-colors duration-200
+//                   ${isActive(item.href) 
+//                     ? 'text-blue-700' 
+//                     : 'text-gray-400 hover:text-blue-700'
+//                   }
+//                 `}>
+//                   {item.icon}
+//                 </span>
+//                 <span className={`
+//                   text-[9px] font-medium tracking-wide transition-colors duration-200
+//                   ${isActive(item.href) ? 'text-blue-700' : 'text-gray-500'}
+//                 `}>
+//                   {item.name}
+//                 </span>
+//               </Link>
 //             ))}
 //           </div>
 
@@ -705,7 +529,7 @@
 //             <div className="relative" ref={notificationRef}>
 //               <button
 //                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-//                 className="p-2 rounded-lg hover:bg-gray-200 transition text-gray-500 hover:text-blue-700 relative"
+//                 className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 relative"
 //                 title="Notifications"
 //               >
 //                 <Bell className="w-5 h-5" />
@@ -720,12 +544,13 @@
 //               {isNotificationOpen && (
 //                 <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[70vh] overflow-hidden z-50">
 //                   <div className="flex items-center justify-between p-4 border-b border-gray-200">
-//                     <h3 className={`font-semibold text-gray-800 ${roboto.className} tracking-wide`}>Notifications</h3>
+//                     <h3 className="font-semibold text-gray-800 tracking-wide">Notifications</h3>
 //                     <div className="flex items-center gap-2">
+//                       {/* Refresh Button */}
 //                       <button
 //                         onClick={handleRefresh}
 //                         disabled={isRefreshing}
-//                         className={`p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-blue-600 ${
+//                         className={`p-1.5 rounded-full hover:bg-gray-100 transition text-gray-400 hover:text-blue-600 ${
 //                           isRefreshing ? 'animate-spin' : ''
 //                         }`}
 //                         title="Refresh notifications"
@@ -737,13 +562,13 @@
 //                         <>
 //                           <button
 //                             onClick={markAllAsRead}
-//                             className={`text-xs text-blue-600 hover:text-blue-800 hover:underline ${roboto.className} tracking-wide`}
+//                             className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
 //                           >
 //                             Mark all read
 //                           </button>
 //                           <button
 //                             onClick={deleteAllNotifications}
-//                             className={`text-xs text-red-600 hover:text-red-800 hover:underline ${roboto.className} tracking-wide`}
+//                             className="text-xs text-red-600 hover:text-red-800 hover:underline"
 //                           >
 //                             Clear all
 //                           </button>
@@ -751,7 +576,7 @@
 //                       )}
 //                       <button
 //                         onClick={() => setIsNotificationOpen(false)}
-//                         className="p-1 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-gray-600"
+//                         className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
 //                       >
 //                         <X className="w-4 h-4" />
 //                       </button>
@@ -762,14 +587,14 @@
 //                     {notifications.length === 0 ? (
 //                       <div className="flex flex-col items-center justify-center py-8 px-4 text-gray-500">
 //                         <Bell className="w-10 h-10 text-gray-300 mb-2" />
-//                         <p className={`text-sm ${roboto.className} tracking-wide`}>No notifications</p>
-//                         <p className={`text-xs text-gray-400 mt-1 ${roboto.className} tracking-wide`}>Check-ins, check-outs, and leave updates appear here</p>
+//                         <p className="text-sm tracking-wide">No notifications</p>
+//                         <p className="text-xs text-gray-400 mt-1">Check-ins, check-outs, and leave updates appear here</p>
 //                       </div>
 //                     ) : (
 //                       notifications.map((notification) => (
 //                         <div
 //                           key={notification.id}
-//                           className={`p-4 border-b border-gray-100 hover:bg-gray-200 transition group ${
+//                           className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition group ${
 //                             !notification.read ? 'bg-blue-50' : ''
 //                           }`}
 //                           onClick={() => markAsRead(notification.id)}
@@ -780,25 +605,25 @@
 //                             </div>
 //                             <div className="flex-1 min-w-0">
 //                               <div className="flex items-center justify-between gap-2">
-//                                 <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>
+//                                 <p className="text-sm font-medium text-gray-800 truncate">
 //                                   {notification.title}
 //                                 </p>
-//                                 <span className={`text-xs text-gray-400 flex-shrink-0 ${roboto.className} tracking-wide`}>
+//                                 <span className="text-xs text-gray-400 flex-shrink-0">
 //                                   {formatTime(notification.time)}
 //                                 </span>
 //                               </div>
-//                               <p className={`text-sm text-gray-600 ${roboto.className} tracking-wide`}>
+//                               <p className="text-sm text-gray-600">
 //                                 {notification.message}
 //                               </p>
 //                               <div className="flex items-center gap-2 mt-1 flex-wrap">
 //                                 {getStatusBadge(notification.type)}
 //                                 {getActionBadge(notification.action)}
 //                                 {!notification.read && (
-//                                   <span className={`text-xs text-blue-600 ${roboto.className} tracking-wide`}>• New</span>
+//                                   <span className="text-xs text-blue-600">• New</span>
 //                                 )}
 //                               </div>
 //                               {notification.location && (
-//                                 <p className={`text-xs text-gray-400 mt-1 ${roboto.className} tracking-wide`}>
+//                                 <p className="text-xs text-gray-400 mt-1">
 //                                   📍 {notification.location}
 //                                 </p>
 //                               )}
@@ -821,7 +646,7 @@
 
 //                   {notifications.length > 0 && (
 //                     <div className="p-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-//                       <span className={`text-xs text-gray-500 ${roboto.className} tracking-wide`}>
+//                       <span className="text-xs text-gray-500">
 //                         {unreadCount} unread • {notifications.length} total
 //                       </span>
 //                       <button
@@ -830,7 +655,7 @@
 //                             deleteAllNotifications()
 //                           }
 //                         }}
-//                         className={`text-xs text-red-600 hover:text-red-800 transition ${roboto.className} tracking-wide`}
+//                         className="text-xs text-red-600 hover:text-red-800 transition"
 //                       >
 //                         Delete All
 //                       </button>
@@ -843,12 +668,33 @@
 //             {/* Vertical Line */}
 //             <div className="w-px h-6 bg-gray-300 mx-0.5"></div>
 
-//             {/* Profile - Same as before */}
-//             <div className="relative" ref={profileRef}>
+//             {/* Add Employee Button */}
+//             <Link
+//               href="/hr/add-employee"
+//               className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 flex items-center gap-1"
+//               title="Add Employee"
+//             >
+//               <UserPlus className="w-5 h-5" />
+//             </Link>
+
+//             {/* Get Sheet Button */}
+//             <Link
+//               href="/hr/get-sheet"
+//               className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 flex items-center gap-1"
+//               title="Get Attendance Sheet"
+//             >
+//               <FileSpreadsheet className="w-5 h-5" />
+//             </Link>
+
+//             {/* Vertical Line */}
+//             <div className="w-px h-6 bg-gray-300 mx-0.5"></div>
+
+//             {/* Profile - Icon Only */}
+//             <div className="relative">
 //               <button
 //                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-//                 className="p-2 rounded-lg hover:bg-gray-200 transition text-gray-500 hover:text-blue-700"
-//                 title={displayName}
+//                 className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700"
+//                 title="HR Administrator"
 //               >
 //                 <User className="w-5 h-5" />
 //               </button>
@@ -857,22 +703,51 @@
 //               {isProfileDropdownOpen && (
 //                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
 //                   <div className="px-4 py-3 border-b border-gray-200">
-//                     <p className={`text-sm font-semibold text-gray-800 ${roboto.className} tracking-wide`}>{displayName}</p>
-//                     <p className={`text-xs text-gray-500 ${roboto.className} tracking-wide`}>{displayDesignation}</p>
+//                     <p className="text-sm font-semibold text-gray-800">HR Administrator</p>
+//                     <p className="text-xs text-gray-500">Admin Panel</p>
 //                   </div>
                   
+//                   {/* Employees - NEW OPTION */}
 //                   <Link
-//                     href={employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard'}
-//                     className={`flex items-center gap-3 px-4 py-2 hover:bg-gray-200 transition text-sm text-gray-700 hover:text-blue-700 ${roboto.className} tracking-wide`}
+//                     href="/hr/employees"
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
 //                     onClick={() => setIsProfileDropdownOpen(false)}
 //                   >
-//                     <LayoutDashboard className="w-4 h-4" />
-//                     Dashboard
+//                     <Users className="w-4 h-4" />
+//                     Employees
+//                   </Link>
+
+//                   {/* Update Password */}
+//                   <Link
+//                     href="/hr/update-password"
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+//                     onClick={() => setIsProfileDropdownOpen(false)}
+//                   >
+//                     <Key className="w-4 h-4" />
+//                     Update Password
 //                   </Link>
 
 //                   <Link
-//                     href={employeeId ? `/settings/${employeeId}` : '/hr/settings'}
-//                     className={`flex items-center gap-3 px-4 py-2 hover:bg-gray-200 transition text-sm text-gray-700 hover:text-blue-700 ${roboto.className} tracking-wide`}
+//                     href="/hr/add-employee"
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+//                     onClick={() => setIsProfileDropdownOpen(false)}
+//                   >
+//                     <UserPlus className="w-4 h-4" />
+//                     Add Employee
+//                   </Link>
+
+//                   <Link
+//                     href="/hr/get-sheet"
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+//                     onClick={() => setIsProfileDropdownOpen(false)}
+//                   >
+//                     <FileSpreadsheet className="w-4 h-4" />
+//                     Get Sheet
+//                   </Link>
+                  
+//                   <Link
+//                     href="/hr/settings"
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
 //                     onClick={() => setIsProfileDropdownOpen(false)}
 //                   >
 //                     <Settings className="w-4 h-4" />
@@ -881,10 +756,10 @@
                   
 //                   <hr className="my-1 border-gray-200" />
                   
-//                   {/* Updated Logout Button with Confirmation */}
+//                   {/* Updated Logout Button */}
 //                   <button
 //                     onClick={handleLogout}
-//                     className={`flex items-center gap-3 px-4 py-2 hover:bg-red-100 transition text-sm text-red-600 w-full ${roboto.className} tracking-wide`}
+//                     className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm text-red-600 w-full"
 //                   >
 //                     <LogOut className="w-4 h-4" />
 //                     Logout
@@ -920,7 +795,7 @@
 //             </div>
 //             <button
 //               onClick={() => setIsMobileMenuOpen(false)}
-//               className="p-2 rounded-lg hover:bg-gray-200 transition"
+//               className="p-2 rounded-lg hover:bg-gray-100 transition"
 //             >
 //               <X className="w-5 h-5 text-gray-700" />
 //             </button>
@@ -930,90 +805,64 @@
 //             <ul className="space-y-0.5">
 //               {navigation.map((item) => (
 //                 <li key={item.name}>
-//                   {item.children ? (
-//                     // Mobile Dropdown
-//                     <div>
-//                       <button
-//                         onClick={() => {
-//                           const submenu = document.getElementById(`mobile-submenu-${item.name}`)
-//                           if (submenu) {
-//                             const isOpen = submenu.style.display === 'block'
-//                             // Close all other submenus
-//                             document.querySelectorAll('.mobile-submenu').forEach(el => {
-//                               (el as HTMLElement).style.display = 'none'
-//                             })
-//                             submenu.style.display = isOpen ? 'none' : 'block'
-//                           }
-//                         }}
-//                         className={`
-//                           w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition
-//                           ${isChildActive(item.children)
-//                             ? 'bg-blue-100 text-blue-700'
-//                             : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-//                           }
-//                         `}
-//                       >
-//                         <div className="flex items-center gap-3">
-//                           <span className={isChildActive(item.children) ? 'text-blue-700' : 'text-gray-400'}>
-//                             {item.icon}
-//                           </span>
-//                           <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
-//                             {item.name}
-//                           </span>
-//                         </div>
-//                         <ChevronDown className="w-4 h-4" />
-//                       </button>
-                      
-//                       <div
-//                         id={`mobile-submenu-${item.name}`}
-//                         className="mobile-submenu ml-8 mt-1 space-y-0.5 hidden"
-//                       >
-//                         {item.children.map((child) => (
-//                           <Link
-//                             key={child.name}
-//                             href={child.href}
-//                             onClick={() => setIsMobileMenuOpen(false)}
-//                             className={`
-//                               flex items-center gap-3 px-3 py-2 rounded-lg transition
-//                               ${isActive(child.href)
-//                                 ? 'bg-blue-100 text-blue-700'
-//                                 : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-//                               }
-//                             `}
-//                           >
-//                             <span className={isActive(child.href) ? 'text-blue-700' : 'text-gray-400'}>
-//                               {child.icon}
-//                             </span>
-//                             <span className={`text-sm ${roboto.className} tracking-wide`}>
-//                               {child.name}
-//                             </span>
-//                           </Link>
-//                         ))}
-//                       </div>
-//                     </div>
-//                   ) : (
-//                     <Link
-//                       href={item.href}
-//                       onClick={() => setIsMobileMenuOpen(false)}
-//                       className={`
-//                         flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-//                         ${isActive(item.href)
-//                           ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
-//                           : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-//                         }
-//                       `}
-//                     >
-//                       <span className={isActive(item.href) ? 'text-blue-700' : 'text-gray-400'}>
-//                         {item.icon}
-//                       </span>
-//                       <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
-//                         {item.name}
-//                       </span>
-//                     </Link>
-//                   )}
+//                   <Link
+//                     href={item.href}
+//                     onClick={() => setIsMobileMenuOpen(false)}
+//                     className={`
+//                       flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+//                       ${isActive(item.href)
+//                         ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
+//                         : 'text-gray-600 hover:bg-gray-50 hover:text-blue-700'
+//                       }
+//                     `}
+//                   >
+//                     <span className={`${isActive(item.href) ? 'text-blue-700' : 'text-gray-400'}`}>
+//                       {item.icon}
+//                     </span>
+//                     <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
+//                       {item.name}
+//                     </span>
+//                   </Link>
 //                 </li>
 //               ))}
 //             </ul>
+
+//             <div className="mt-4 pt-4 border-t border-gray-200">
+//               {/* Employees - Mobile */}
+//               <Link
+//                 href="/hr/employees"
+//                 onClick={() => setIsMobileMenuOpen(false)}
+//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+//               >
+//                 <Users className="w-5 h-5 text-gray-400" />
+//                 <span className="text-sm font-medium">Employees</span>
+//               </Link>
+//               {/* Update Password - Mobile */}
+//               <Link
+//                 href="/hr/update-password"
+//                 onClick={() => setIsMobileMenuOpen(false)}
+//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+//               >
+//                 <Key className="w-5 h-5 text-gray-400" />
+//                 <span className="text-sm font-medium">Update Password</span>
+//               </Link>
+//               <Link
+//                 href="/hr/add-employee"
+//                 onClick={() => setIsMobileMenuOpen(false)}
+//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+//               >
+//                 <UserPlus className="w-5 h-5 text-gray-400" />
+//                 <span className="text-sm font-medium">Add Employee</span>
+//               </Link>
+//               <Link
+//                 href="/hr/get-sheet"
+//                 onClick={() => setIsMobileMenuOpen(false)}
+//                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+//               >
+//                 <FileSpreadsheet className="w-5 h-5 text-gray-400" />
+//                 <span className="text-sm font-medium">Get Sheet</span>
+//               </Link>
+//             </div>
 //           </nav>
 
 //           {/* Footer in Mobile Menu */}
@@ -1023,17 +872,13 @@
 //                 <User className="w-5 h-5" />
 //               </div>
 //               <div className="flex-1 min-w-0">
-//                 <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>
-//                   {displayName}
-//                 </p>
-//                 <p className={`text-xs text-gray-500 truncate ${roboto.className} tracking-wide`}>
-//                   {displayDesignation}
-//                 </p>
+//                 <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>HR Administrator</p>
+//                 <p className={`text-xs text-gray-500 truncate ${roboto.className} tracking-wide`}>Admin Panel</p>
 //               </div>
-//               {/* Updated Mobile Logout Button with Confirmation */}
+//               {/* Updated Mobile Logout Button */}
 //               <button
 //                 onClick={handleLogout}
-//                 className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-red-600"
+//                 className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-red-600"
 //                 title="Logout"
 //               >
 //                 <LogOut className="w-4 h-4" />
@@ -1047,26 +892,27 @@
 //               <span className="font-medium text-[#0071BD]">Muhammad Hassan Jaffer</span>
 //             </div>
 //           </div>
+          
 //         </div>
 //       </div>
 
 //       {/* Spacer for fixed navbar */}
 //       <div className="h-16"></div>
-//       </ProtectedEmployeeRoute>
 //     </>
 //   )
 // }
 
 
 
+// src/components/NavbarDropdown.tsx
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute'
 import { client } from '@/sanity/lib/client'
+import { useAuth } from '@/context/AuthContext'
 import {
   LayoutDashboard,
   CalendarClock,
@@ -1078,6 +924,8 @@ import {
   LogOut,
   User,
   Bell,
+  UserPlus,
+  FileSpreadsheet,
   CheckCircle,
   XCircle,
   Clock,
@@ -1086,11 +934,8 @@ import {
   LogIn,
   LogOut as LogOutIcon,
   RefreshCw,
-  ChevronDown,
-  ClipboardCheck,
-  History,
-  FileText,
-  ListChecks,
+  Key,
+  Users,
 } from 'lucide-react'
 
 // Import Roboto font
@@ -1107,7 +952,6 @@ interface NavItem {
   name: string
   href: string
   icon: React.ReactNode
-  children?: NavItem[]
 }
 
 interface Notification {
@@ -1148,8 +992,6 @@ interface Employee {
     department: string
     position: string
   }
-  username: string
-  password: string
   checkIn?: Array<{ time: string; location: string }>
   checkOut?: Array<{ time: string; location: string }>
   leaves?: LeaveRequest[]
@@ -1158,125 +1000,55 @@ interface Employee {
 export default function NavbarDropdown() {
   const pathname = usePathname()
   const router = useRouter()
+  const { logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [employeeId, setEmployeeId] = useState<string>('')
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
-  const profileRef = useRef<HTMLDivElement>(null)
-  const attendanceRef = useRef<HTMLDivElement>(null)
-  const leavesRef = useRef<HTMLDivElement>(null)
-
-  // Get employeeId from localStorage or URL
-  useEffect(() => {
-    const storedEmployeeId = localStorage.getItem('employeeId')
-    if (storedEmployeeId) {
-      setEmployeeId(storedEmployeeId)
-    } else {
-      const pathParts = pathname?.split('/') || []
-      const idIndex = pathParts.findIndex(part => part === 'dashboard' || part === 'attendance' || part === 'leaves' || part === 'settings')
-      if (idIndex !== -1 && pathParts[idIndex + 1]) {
-        setEmployeeId(pathParts[idIndex + 1])
-        localStorage.setItem('employeeId', pathParts[idIndex + 1])
-      }
-    }
-  }, [pathname])
-
-  // Fetch current employee data
-  useEffect(() => {
-    const fetchCurrentEmployee = async () => {
-      try {
-        if (!employeeId) return
-        
-        const query = `
-          *[_type == "employee" && personalDetails.employeeId == $employeeId][0] {
-            _id,
-            personalDetails {
-              fullName,
-              employeeId,
-              department,
-              position
-            },
-            username,
-            password
-          }
-        `
-        const data = await client.fetch(query, { employeeId })
-        if (data) {
-          setCurrentEmployee(data)
-        }
-      } catch (error) {
-        console.error('Error fetching employee data:', error)
-      }
-    }
-    fetchCurrentEmployee()
-  }, [employeeId])
 
   const navigation: NavItem[] = [
     {
       name: 'DASHBOARD',
-      href: employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard',
+      href: '/hr/dashboard',
       icon: <LayoutDashboard className="w-5 h-5" />
     },
     {
+      name: 'EMPLOYEES',
+      href: '/hr/employees',
+      icon: <Users className="w-5 h-5" />
+    },
+    {
       name: 'ATTENDANCE',
-      href: '#',
-      icon: <CalendarClock className="w-5 h-5" />,
-      children: [
-        {
-          name: 'Mark Attendance',
-          href: employeeId ? `/attendance/${employeeId}` : '/hr/attendance',
-          icon: <ClipboardCheck className="w-4 h-4" />
-        },
-        {
-          name: 'Attendance History',
-          href: employeeId ? `/attendance-history/${employeeId}` : '/hr/attendance-history',
-          icon: <History className="w-4 h-4" />
-        }
-      ]
+      href: '/hr/attendance',
+      icon: <CalendarClock className="w-5 h-5" />
     },
     {
       name: 'LEAVES',
-      href: '#',
-      icon: <CalendarDays className="w-5 h-5" />,
-      children: [
-        {
-          name: 'Apply Leave',
-          href: employeeId ? `/leaves/${employeeId}` : '/hr/leaves',
-          icon: <FileText className="w-4 h-4" />
-        },
-        {
-          name: 'Leave History',
-          href: employeeId ? `/leave-history/${employeeId}` : '/hr/leave-history',
-          icon: <ListChecks className="w-4 h-4" />
-        }
-      ]
+      href: '/hr/leaves',
+      icon: <CalendarDays className="w-5 h-5" />
     },
     {
       name: 'PAYROLL',
-      href: employeeId ? `/` : '/',
+      href: '/',
       icon: <Wallet className="w-5 h-5" />
     },
     {
       name: 'SETTINGS',
-      href: employeeId ? `/settings/${employeeId}` : '/hr/settings',
+      href: '/hr/settings',
       icon: <Settings className="w-5 h-5" />
     }
   ]
 
   const isActive = (href: string) => {
-    if (href === '#') return false
     return pathname === href || pathname?.startsWith(href + '/')
   }
 
-  const isChildActive = (children?: NavItem[]) => {
-    if (!children) return false
-    return children.some(child => isActive(child.href))
-  }
+  // =====================================================
+  // Helper Functions - Defined FIRST
+  // =====================================================
 
   const loadNotifications = () => {
     try {
@@ -1301,7 +1073,9 @@ export default function NavbarDropdown() {
     }
   }
 
-  // ✅ Wrap fetchNotifications in useCallback
+  // =====================================================
+  // fetchNotifications - Defined with useCallback BEFORE useEffect
+  // =====================================================
   const fetchNotifications = useCallback(async () => {
     try {
       const query = `
@@ -1449,8 +1223,12 @@ export default function NavbarDropdown() {
     } catch (error) {
       console.error('Error fetching notifications:', error)
     }
-  }, [notifications]) // ✅ Added notifications as dependency
+  }, [notifications])
 
+  // =====================================================
+  // useEffect - Now fetchNotifications is defined
+  // =====================================================
+  
   // Load notifications from localStorage on mount
   useEffect(() => {
     loadNotifications()
@@ -1458,31 +1236,22 @@ export default function NavbarDropdown() {
     
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
-  }, [fetchNotifications]) // ✅ Now fetchNotifications is stable
+  }, [fetchNotifications])
 
-  // Close dropdowns when clicking outside
+  // Close notification dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setIsNotificationOpen(false)
       }
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileDropdownOpen(false)
-      }
-      // Close attendance dropdown
-      const attendanceDropdown = document.getElementById('dropdown-ATTENDANCE')
-      if (attendanceDropdown && attendanceRef.current && !attendanceRef.current.contains(event.target as Node)) {
-        attendanceDropdown.style.display = 'none'
-      }
-      // Close leaves dropdown
-      const leavesDropdown = document.getElementById('dropdown-LEAVES')
-      if (leavesDropdown && leavesRef.current && !leavesRef.current.contains(event.target as Node)) {
-        leavesDropdown.style.display = 'none'
-      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // =====================================================
+  // Handlers
+  // =====================================================
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -1578,68 +1347,35 @@ export default function NavbarDropdown() {
     }
   }
 
-  // Get display name and designation from employee data
-  const displayName = currentEmployee?.personalDetails?.fullName || 'Employee'
-  const displayDesignation = currentEmployee?.personalDetails?.position || 'Employee'
-
-  const toggleDropdown = (dropdownId: string) => {
-    const dropdown = document.getElementById(dropdownId)
-    if (dropdown) {
-      const isOpen = dropdown.style.display === 'block'
-      // Close all other dropdowns first
-      document.querySelectorAll('.nav-dropdown').forEach(el => {
-        (el as HTMLElement).style.display = 'none'
-      })
-      dropdown.style.display = isOpen ? 'none' : 'block'
-    }
-  }
-
-  // Updated Logout Handler with Confirmation
-  const handleLogout = () => {
-    // Close dropdowns
+  const handleLogout = async () => {
     setIsProfileDropdownOpen(false)
     setIsMobileMenuOpen(false)
     
-    // Show confirmation dialog
-    if (window.confirm('Are you sure you want to logout?')) {
-      // Clear all localStorage items
-      localStorage.removeItem('employeeData')
-      localStorage.removeItem('employeeLogin')
-      localStorage.removeItem('employeeId')
-      localStorage.removeItem('notifications')
-      localStorage.removeItem('hrms_user')
-      
-      // Clear session storage if any
-      sessionStorage.clear()
-      
-      // Close notification dropdown if open
-      setIsNotificationOpen(false)
-      
-      // Redirect to main page (login page)
-      router.push('/')
-      
-      // Optional: Show logout success message
-      // You can add a toast notification here if you have one
-    }
+    await logout()
+    
+    localStorage.removeItem('employeeData')
+    localStorage.removeItem('employeeLogin')
+    localStorage.removeItem('notifications')
+    
+    router.push('/login')
   }
 
   return (
     <>
-    <ProtectedEmployeeRoute allowedRole='employee'>
-            {/* Top Navigation Bar - White Background */}
+      {/* Top Navigation Bar - White Background */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md border-b border-gray-200">
         <div className="flex items-center justify-between px-4 h-16">
           {/* Left Section - Logo with Vertical Line */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-1.5 rounded-lg hover:bg-gray-200 transition lg:hidden"
+              className="p-1.5 rounded-lg hover:bg-gray-100 transition lg:hidden"
             >
               <Menu className="w-5 h-5 text-gray-700" />
             </button>
 
             {/* Logo */}
-            <Link href={employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard'} className="flex items-center">
+            <Link href="/hr/dashboard" className="flex items-center">
               <div className="relative w-32 h-16 flex-shrink-0">
                 <Image
                   src="/logo.png"
@@ -1658,106 +1394,33 @@ export default function NavbarDropdown() {
           {/* Center - Navigation Links */}
           <div className="hidden lg:flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
             {navigation.map((item) => (
-              <div key={item.name} className="relative">
-                {item.children ? (
-                  // Dropdown Menu - Same design as profile dropdown
-                  <div 
-                    ref={item.name === 'ATTENDANCE' ? attendanceRef : leavesRef}
-                    className="relative"
-                  >
-                    <button
-                      onClick={() => toggleDropdown(`dropdown-${item.name}`)}
-                      className={`
-                        flex flex-col items-center gap-0.5 min-w-[65px] relative py-1
-                        ${isChildActive(item.children)
-                          ? 'text-blue-700'
-                          : 'text-gray-500 hover:text-blue-700'
-                        }
-                      `}
-                    >
-                      <span className={`
-                        transition-colors duration-200
-                        ${isChildActive(item.children)
-                          ? 'text-blue-700'
-                          : 'text-gray-400 hover:text-blue-700'
-                        }
-                      `}>
-                        {item.icon}
-                      </span>
-                      <span className={`
-                        text-[9px] font-medium tracking-wide transition-colors duration-200 flex items-center gap-0.5
-                        ${isChildActive(item.children)
-                          ? 'text-blue-700'
-                          : 'text-gray-500'
-                        }
-                      `}>
-                        {item.name}
-                        <ChevronDown className="w-3 h-3" />
-                      </span>
-                    </button>
-
-                    {/* Dropdown Menu - Same style as profile dropdown */}
-                    <div
-                      id={`dropdown-${item.name}`}
-                      className="nav-dropdown absolute left-1/2 transform -translate-x-1/2 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 hidden"
-                    >
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.name}
-                          href={child.href}
-                          className={`
-                            flex items-center gap-3 px-4 py-2.5 transition
-                            ${isActive(child.href)
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'text-gray-700 hover:bg-gray-200 hover:text-blue-700'
-                            }
-                          `}
-                          onClick={() => {
-                            // Close dropdown after clicking
-                            const dropdown = document.getElementById(`dropdown-${item.name}`)
-                            if (dropdown) dropdown.style.display = 'none'
-                          }}
-                        >
-                          <span className={isActive(child.href) ? 'text-blue-700' : 'text-gray-400'}>
-                            {child.icon}
-                          </span>
-                          <span className={`text-sm font-medium ${roboto.className} tracking-wide`}>
-                            {child.name}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  // Regular Link
-                  <Link
-                    href={item.href}
-                    className={`
-                      flex flex-col items-center gap-0.5 min-w-[65px] relative py-1
-                      ${isActive(item.href)
-                        ? 'text-blue-700'
-                        : 'text-gray-500 hover:text-blue-700'
-                      }
-                    `}
-                  >
-                    <span className={`
-                      transition-colors duration-200
-                      ${isActive(item.href)
-                        ? 'text-blue-700'
-                        : 'text-gray-400 hover:text-blue-700'
-                      }
-                    `}>
-                      {item.icon}
-                    </span>
-                    <span className={`
-                      text-[9px] font-medium tracking-wide transition-colors duration-200
-                      ${isActive(item.href) ? 'text-blue-700' : 'text-gray-500'}
-                    `}>
-                      {item.name}
-                    </span>
-                  </Link>
-                )}
-              </div>
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`
+                  flex flex-col items-center gap-0.5 min-w-[65px] relative
+                  ${isActive(item.href)
+                    ? 'text-blue-700'
+                    : 'text-gray-500'
+                  }
+                `}
+              >
+                <span className={`
+                  transition-colors duration-200
+                  ${isActive(item.href) 
+                    ? 'text-blue-700' 
+                    : 'text-gray-400 hover:text-blue-700'
+                  }
+                `}>
+                  {item.icon}
+                </span>
+                <span className={`
+                  text-[9px] font-medium tracking-wide transition-colors duration-200
+                  ${isActive(item.href) ? 'text-blue-700' : 'text-gray-500'}
+                `}>
+                  {item.name}
+                </span>
+              </Link>
             ))}
           </div>
 
@@ -1767,7 +1430,7 @@ export default function NavbarDropdown() {
             <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                className="p-2 rounded-lg hover:bg-gray-200 transition text-gray-500 hover:text-blue-700 relative"
+                className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 relative"
                 title="Notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -1782,12 +1445,12 @@ export default function NavbarDropdown() {
               {isNotificationOpen && (
                 <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 max-h-[70vh] overflow-hidden z-50">
                   <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <h3 className={`font-semibold text-gray-800 ${roboto.className} tracking-wide`}>Notifications</h3>
+                    <h3 className="font-semibold text-gray-800 tracking-wide">Notifications</h3>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleRefresh}
                         disabled={isRefreshing}
-                        className={`p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-blue-600 ${
+                        className={`p-1.5 rounded-full hover:bg-gray-100 transition text-gray-400 hover:text-blue-600 ${
                           isRefreshing ? 'animate-spin' : ''
                         }`}
                         title="Refresh notifications"
@@ -1799,13 +1462,13 @@ export default function NavbarDropdown() {
                         <>
                           <button
                             onClick={markAllAsRead}
-                            className={`text-xs text-blue-600 hover:text-blue-800 hover:underline ${roboto.className} tracking-wide`}
+                            className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                           >
                             Mark all read
                           </button>
                           <button
                             onClick={deleteAllNotifications}
-                            className={`text-xs text-red-600 hover:text-red-800 hover:underline ${roboto.className} tracking-wide`}
+                            className="text-xs text-red-600 hover:text-red-800 hover:underline"
                           >
                             Clear all
                           </button>
@@ -1813,7 +1476,7 @@ export default function NavbarDropdown() {
                       )}
                       <button
                         onClick={() => setIsNotificationOpen(false)}
-                        className="p-1 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-gray-600"
+                        className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -1824,14 +1487,14 @@ export default function NavbarDropdown() {
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 px-4 text-gray-500">
                         <Bell className="w-10 h-10 text-gray-300 mb-2" />
-                        <p className={`text-sm ${roboto.className} tracking-wide`}>No notifications</p>
-                        <p className={`text-xs text-gray-400 mt-1 ${roboto.className} tracking-wide`}>Check-ins, check-outs, and leave updates appear here</p>
+                        <p className="text-sm tracking-wide">No notifications</p>
+                        <p className="text-xs text-gray-400 mt-1">Check-ins, check-outs, and leave updates appear here</p>
                       </div>
                     ) : (
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 border-b border-gray-100 hover:bg-gray-200 transition group ${
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition group ${
                             !notification.read ? 'bg-blue-50' : ''
                           }`}
                           onClick={() => markAsRead(notification.id)}
@@ -1842,25 +1505,25 @@ export default function NavbarDropdown() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
-                                <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>
+                                <p className="text-sm font-medium text-gray-800 truncate">
                                   {notification.title}
                                 </p>
-                                <span className={`text-xs text-gray-400 flex-shrink-0 ${roboto.className} tracking-wide`}>
+                                <span className="text-xs text-gray-400 flex-shrink-0">
                                   {formatTime(notification.time)}
                                 </span>
                               </div>
-                              <p className={`text-sm text-gray-600 ${roboto.className} tracking-wide`}>
+                              <p className="text-sm text-gray-600">
                                 {notification.message}
                               </p>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {getStatusBadge(notification.type)}
                                 {getActionBadge(notification.action)}
                                 {!notification.read && (
-                                  <span className={`text-xs text-blue-600 ${roboto.className} tracking-wide`}>• New</span>
+                                  <span className="text-xs text-blue-600">• New</span>
                                 )}
                               </div>
                               {notification.location && (
-                                <p className={`text-xs text-gray-400 mt-1 ${roboto.className} tracking-wide`}>
+                                <p className="text-xs text-gray-400 mt-1">
                                   📍 {notification.location}
                                 </p>
                               )}
@@ -1883,7 +1546,7 @@ export default function NavbarDropdown() {
 
                   {notifications.length > 0 && (
                     <div className="p-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-                      <span className={`text-xs text-gray-500 ${roboto.className} tracking-wide`}>
+                      <span className="text-xs text-gray-500">
                         {unreadCount} unread • {notifications.length} total
                       </span>
                       <button
@@ -1892,7 +1555,7 @@ export default function NavbarDropdown() {
                             deleteAllNotifications()
                           }
                         }}
-                        className={`text-xs text-red-600 hover:text-red-800 transition ${roboto.className} tracking-wide`}
+                        className="text-xs text-red-600 hover:text-red-800 transition"
                       >
                         Delete All
                       </button>
@@ -1905,12 +1568,33 @@ export default function NavbarDropdown() {
             {/* Vertical Line */}
             <div className="w-px h-6 bg-gray-300 mx-0.5"></div>
 
-            {/* Profile - Same as before */}
-            <div className="relative" ref={profileRef}>
+            {/* Add Employee Button */}
+            <Link
+              href="/hr/add-employee"
+              className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 flex items-center gap-1"
+              title="Add Employee"
+            >
+              <UserPlus className="w-5 h-5" />
+            </Link>
+
+            {/* Get Sheet Button */}
+            <Link
+              href="/hr/get-sheet"
+              className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700 flex items-center gap-1"
+              title="Get Attendance Sheet"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+            </Link>
+
+            {/* Vertical Line */}
+            <div className="w-px h-6 bg-gray-300 mx-0.5"></div>
+
+            {/* Profile - Icon Only */}
+            <div className="relative">
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="p-2 rounded-lg hover:bg-gray-200 transition text-gray-500 hover:text-blue-700"
-                title={displayName}
+                className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500 hover:text-blue-700"
+                title="HR Administrator"
               >
                 <User className="w-5 h-5" />
               </button>
@@ -1919,22 +1603,49 @@ export default function NavbarDropdown() {
               {isProfileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <div className="px-4 py-3 border-b border-gray-200">
-                    <p className={`text-sm font-semibold text-gray-800 ${roboto.className} tracking-wide`}>{displayName}</p>
-                    <p className={`text-xs text-gray-500 ${roboto.className} tracking-wide`}>{displayDesignation}</p>
+                    <p className="text-sm font-semibold text-gray-800">HR Administrator</p>
+                    <p className="text-xs text-gray-500">Admin Panel</p>
                   </div>
                   
                   <Link
-                    href={employeeId ? `/dashboard/${employeeId}` : '/hr/dashboard'}
-                    className={`flex items-center gap-3 px-4 py-2 hover:bg-gray-200 transition text-sm text-gray-700 hover:text-blue-700 ${roboto.className} tracking-wide`}
+                    href="/hr/employees"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    Dashboard
+                    <Users className="w-4 h-4" />
+                    Employees
                   </Link>
 
                   <Link
-                    href={employeeId ? `/settings/${employeeId}` : '/hr/settings'}
-                    className={`flex items-center gap-3 px-4 py-2 hover:bg-gray-200 transition text-sm text-gray-700 hover:text-blue-700 ${roboto.className} tracking-wide`}
+                    href="/hr/update-password"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <Key className="w-4 h-4" />
+                    Update Password
+                  </Link>
+
+                  <Link
+                    href="/hr/add-employee"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add Employee
+                  </Link>
+
+                  <Link
+                    href="/hr/get-sheet"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Get Sheet
+                  </Link>
+                  
+                  <Link
+                    href="/hr/settings"
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-sm text-gray-700 hover:text-blue-700"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     <Settings className="w-4 h-4" />
@@ -1943,10 +1654,9 @@ export default function NavbarDropdown() {
                   
                   <hr className="my-1 border-gray-200" />
                   
-                  {/* Updated Logout Button with Confirmation */}
                   <button
                     onClick={handleLogout}
-                    className={`flex items-center gap-3 px-4 py-2 hover:bg-red-100 transition text-sm text-red-600 w-full ${roboto.className} tracking-wide`}
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-sm text-red-600 w-full"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -1982,7 +1692,7 @@ export default function NavbarDropdown() {
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-lg hover:bg-gray-200 transition"
+              className="p-2 rounded-lg hover:bg-gray-100 transition"
             >
               <X className="w-5 h-5 text-gray-700" />
             </button>
@@ -1992,90 +1702,62 @@ export default function NavbarDropdown() {
             <ul className="space-y-0.5">
               {navigation.map((item) => (
                 <li key={item.name}>
-                  {item.children ? (
-                    // Mobile Dropdown
-                    <div>
-                      <button
-                        onClick={() => {
-                          const submenu = document.getElementById(`mobile-submenu-${item.name}`)
-                          if (submenu) {
-                            const isOpen = submenu.style.display === 'block'
-                            // Close all other submenus
-                            document.querySelectorAll('.mobile-submenu').forEach(el => {
-                              (el as HTMLElement).style.display = 'none'
-                            })
-                            submenu.style.display = isOpen ? 'none' : 'block'
-                          }
-                        }}
-                        className={`
-                          w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition
-                          ${isChildActive(item.children)
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-                          }
-                        `}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={isChildActive(item.children) ? 'text-blue-700' : 'text-gray-400'}>
-                            {item.icon}
-                          </span>
-                          <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
-                            {item.name}
-                          </span>
-                        </div>
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                      
-                      <div
-                        id={`mobile-submenu-${item.name}`}
-                        className="mobile-submenu ml-8 mt-1 space-y-0.5 hidden"
-                      >
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.name}
-                            href={child.href}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={`
-                              flex items-center gap-3 px-3 py-2 rounded-lg transition
-                              ${isActive(child.href)
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-                              }
-                            `}
-                          >
-                            <span className={isActive(child.href) ? 'text-blue-700' : 'text-gray-400'}>
-                              {child.icon}
-                            </span>
-                            <span className={`text-sm ${roboto.className} tracking-wide`}>
-                              {child.name}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`
-                        flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                        ${isActive(item.href)
-                          ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
-                          : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
-                        }
-                      `}
-                    >
-                      <span className={isActive(item.href) ? 'text-blue-700' : 'text-gray-400'}>
-                        {item.icon}
-                      </span>
-                      <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
-                        {item.name}
-                      </span>
-                    </Link>
-                  )}
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`
+                      flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      ${isActive(item.href)
+                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-blue-700'
+                      }
+                    `}
+                  >
+                    <span className={`${isActive(item.href) ? 'text-blue-700' : 'text-gray-400'}`}>
+                      {item.icon}
+                    </span>
+                    <span className={`flex-1 text-sm font-medium ${roboto.className} tracking-wide`}>
+                      {item.name}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <Link
+                href="/hr/employees"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+              >
+                <Users className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-medium">Employees</span>
+              </Link>
+              <Link
+                href="/hr/update-password"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+              >
+                <Key className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-medium">Update Password</span>
+              </Link>
+              <Link
+                href="/hr/add-employee"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+              >
+                <UserPlus className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-medium">Add Employee</span>
+              </Link>
+              <Link
+                href="/hr/get-sheet"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-700 transition ${roboto.className} tracking-wide`}
+              >
+                <FileSpreadsheet className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-medium">Get Sheet</span>
+              </Link>
+            </div>
           </nav>
 
           {/* Footer in Mobile Menu */}
@@ -2085,17 +1767,12 @@ export default function NavbarDropdown() {
                 <User className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>
-                  {displayName}
-                </p>
-                <p className={`text-xs text-gray-500 truncate ${roboto.className} tracking-wide`}>
-                  {displayDesignation}
-                </p>
+                <p className={`text-sm font-medium text-gray-800 truncate ${roboto.className} tracking-wide`}>HR Administrator</p>
+                <p className={`text-xs text-gray-500 truncate ${roboto.className} tracking-wide`}>Admin Panel</p>
               </div>
-              {/* Updated Mobile Logout Button with Confirmation */}
               <button
                 onClick={handleLogout}
-                className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-red-600"
+                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-red-600"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -2109,12 +1786,12 @@ export default function NavbarDropdown() {
               <span className="font-medium text-[#0071BD]">Muhammad Hassan Jaffer</span>
             </div>
           </div>
+          
         </div>
       </div>
 
       {/* Spacer for fixed navbar */}
       <div className="h-16"></div>
-      </ProtectedEmployeeRoute>
     </>
   )
 }

@@ -2,10 +2,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import NavbarDropdown from '@/app/components/navbar/page'
+import NavbarDropdown from '@/components/navbar'
 import { client } from '@/sanity/lib/client'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import Footer from '@/app/components/footer'
+import Footer from '@/components/footer'
 import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns'
 import { 
   Calendar, 
@@ -437,7 +437,7 @@ setDepartments([...new Set(depts)]);
         </div>
 
         {/* Filters */}
-        <div className="bg-white shadow-sm p-4 mb-6">
+        <div className="bg-white text-black shadow-sm p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <select
@@ -631,7 +631,7 @@ setDepartments([...new Set(depts)]);
 
                                         {coords && (
                                           <div className="mt-2 flex flex-wrap items-center gap-3">
-                                            <span className="text-xs bg-gray-100 px-2 py-1 flex items-center gap-1 tracking-wide">
+                                            <span className="text-xs text-black bg-gray-100 px-2 py-1 flex items-center gap-1 tracking-wide">
                                               <Globe className="w-3 h-3" />
                                               {formatCoordinates(coords.lat, coords.lng)}
                                             </span>
@@ -683,7 +683,7 @@ setDepartments([...new Set(depts)]);
                         </div>
 
                         {/* View Details Button */}
-                        <div className="mt-4 text-right">
+                        {/* <div className="mt-4 text-right">
                           <button
                             onClick={() => window.location.href = `/employees/${employee._id}/attendance`}
                             className="px-4 py-2 text-sm bg-[#0071BD] text-white hover:bg-[#005a96] transition flex items-center gap-2 inline-flex tracking-wider"
@@ -691,7 +691,7 @@ setDepartments([...new Set(depts)]);
                             <Eye className="w-4 h-4" />
                             View Full Details
                           </button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   )}

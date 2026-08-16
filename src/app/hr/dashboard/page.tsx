@@ -1093,8 +1093,8 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import NavbarDropdown from '@/app/components/navbar/page'
-import Footer from '@/app/components/footer'
+import NavbarDropdown from '@/components/navbar'
+import Footer from '@/components/footer'
 import { client } from '@/sanity/lib/client'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import {

@@ -2,9 +2,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Footer from '@/app/components/footer';
+import Footer from '@/components/footer';
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute';
-import NavbarDropdown from '@/app/Navbar/page';
+import NavbarDropdown from '@/app/Navbar/page'
 import { useParams, useRouter } from 'next/navigation';
 import {
   User,

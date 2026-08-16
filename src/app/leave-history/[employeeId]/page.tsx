@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { client } from '@/sanity/lib/client';
 import Link from 'next/link';
-import Footer from '@/app/components/footer';
+import Footer from '@/components/footer';
 import ProtectedEmployeeRoute from '@/components/ProtectedEmployeeRoute';
-import NavbarDropdown from '@/app/Navbar/page';
+import NavbarDropdown from '@/app/Navbar/page'
 import {
   Calendar,
   Users,
@@ -418,7 +418,7 @@ export default function LeaveHistoryPage() {
                   
                 </div>
               </div>
-              
+{/*               
               <div className="flex gap-3">
                 <Link
                   href={`/employee/${employeeId}`}
@@ -427,7 +427,7 @@ export default function LeaveHistoryPage() {
                   <Eye className="w-4 h-4" />
                   View Profile
                 </Link>
-              </div>
+              </div> */}
             </div>
           </div>
 

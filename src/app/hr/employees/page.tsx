@@ -2,8 +2,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import NavbarDropdown from '@/app/components/navbar/page'
-import Footer from '@/app/components/footer'
+import NavbarDropdown from '@/components/navbar'
+import Footer from '@/components/footer'
 import { useRouter } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { client } from '@/sanity/lib/client'

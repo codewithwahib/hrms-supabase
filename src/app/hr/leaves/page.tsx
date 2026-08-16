@@ -3,8 +3,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react' // Added useCallback
-import NavbarDropdown from '@/app/components/navbar/page'
+import NavbarDropdown from '@/components/navbar'
 import { format, parseISO } from 'date-fns'
+import Footer from '@/components/footer'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import {
   Calendar,
@@ -1158,6 +1159,7 @@ export default function HRLeaveManagementPage() {
             </div>
           )}
         </div>
+        <Footer/>
       </ProtectedRoute>
     </>
   )

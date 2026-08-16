@@ -1,9 +1,9 @@
 // app/hr/add-employee/page.tsx
 'use client'
 
-import { useState, useRef } from 'react'
-import NavbarDropdown from '@/app/components/navbar/page'
-import Footer from '@/app/components/footer'
+import { useState, useRef, useEffect } from 'react'
+import NavbarDropdown from '@/components/navbar'
+import Footer from '@/components/footer'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useRouter } from 'next/navigation'
 import {
@@ -93,6 +93,18 @@ export default function AddEmployeePage() {
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [cvFileName, setCvFileName] = useState('')
   const [cvUploading, setCvUploading] = useState(false)
+  
+  // Employee ID states
+  const [checkingEmployeeId, setCheckingEmployeeId] = useState(false)
+  const [employeeIdExists, setEmployeeIdExists] = useState(false)
+  const [employeeIdStatus, setEmployeeIdStatus] = useState<'idle' | 'checking' | 'available' | 'exists'>('idle')
+  const [employeeIdCheckTimeout, setEmployeeIdCheckTimeout] = useState<NodeJS.Timeout | null>(null)
+  
+  // Username states
+  const [checkingUsername, setCheckingUsername] = useState(false)
+  const [usernameExists, setUsernameExists] = useState(false)
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'exists'>('idle')
+  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const [formData, setFormData] = useState<EmployeeFormData>({
     personalDetails: {
@@ -135,7 +147,178 @@ export default function AddEmployeePage() {
   })
   const [showExperienceForm, setShowExperienceForm] = useState(false)
 
+  // =====================================================
+  // Check Employee ID
+  // =====================================================
+  const checkEmployeeIdExists = async (employeeId: string) => {
+    if (!employeeId || employeeId.length < 2) {
+      setEmployeeIdExists(false)
+      setEmployeeIdStatus('idle')
+      return
+    }
+
+    setEmployeeIdStatus('checking')
+    setCheckingEmployeeId(true)
+
+    try {
+      const response = await fetch(`/api/hr/check-employee-id?employeeId=${encodeURIComponent(employeeId)}`)
+      const result = await response.json()
+      
+      if (result.exists) {
+        setEmployeeIdExists(true)
+        setEmployeeIdStatus('exists')
+      } else {
+        setEmployeeIdExists(false)
+        setEmployeeIdStatus('available')
+      }
+    } catch (error) {
+      console.error('Error checking employee ID:', error)
+      setEmployeeIdStatus('idle')
+    } finally {
+      setCheckingEmployeeId(false)
+    }
+  }
+
+  // =====================================================
+  // Check Username
+  // =====================================================
+  const checkUsernameExists = async (username: string) => {
+    if (!username || username.length < 2) {
+      setUsernameExists(false)
+      setUsernameStatus('idle')
+      return
+    }
+
+    setUsernameStatus('checking')
+    setCheckingUsername(true)
+
+    try {
+      const response = await fetch(`/api/hr/check-username?username=${encodeURIComponent(username)}`)
+      const result = await response.json()
+      
+      if (result.exists) {
+        setUsernameExists(true)
+        setUsernameStatus('exists')
+      } else {
+        setUsernameExists(false)
+        setUsernameStatus('available')
+      }
+    } catch (error) {
+      console.error('Error checking username:', error)
+      setUsernameStatus('idle')
+    } finally {
+      setCheckingUsername(false)
+    }
+  }
+
+  // =====================================================
+  // Debounced checks
+  // =====================================================
+  const debouncedCheckEmployeeId = (employeeId: string) => {
+    if (employeeIdCheckTimeout) {
+      clearTimeout(employeeIdCheckTimeout)
+      setEmployeeIdCheckTimeout(null)
+    }
+    const timeout = setTimeout(() => {
+      checkEmployeeIdExists(employeeId)
+    }, 300)
+    setEmployeeIdCheckTimeout(timeout)
+  }
+
+  const debouncedCheckUsername = (username: string) => {
+    if (usernameCheckTimeout) {
+      clearTimeout(usernameCheckTimeout)
+      setUsernameCheckTimeout(null)
+    }
+    const timeout = setTimeout(() => {
+      checkUsernameExists(username)
+    }, 300)
+    setUsernameCheckTimeout(timeout)
+  }
+
+  // =====================================================
+  // handleInputChange
+  // =====================================================
   const handleInputChange = (section: string, field: string, value: string) => {
+    // CNIC validation - only allow numbers and max 13 digits
+    if (field === 'cnicNumber') {
+      const cleaned = value.replace(/\D/g, '')
+      if (cleaned.length > 13) return
+      setFormData({
+        ...formData,
+        personalDetails: {
+          ...formData.personalDetails,
+          [field]: cleaned
+        }
+      })
+      return
+    }
+
+    // Phone Number validation - only allow numbers and max 11 digits
+    if (field === 'phoneNumber') {
+      const cleaned = value.replace(/\D/g, '')
+      if (cleaned.length > 11) return
+      setFormData({
+        ...formData,
+        personalDetails: {
+          ...formData.personalDetails,
+          [field]: cleaned
+        }
+      })
+      return
+    }
+
+    // Emergency Contact validation - only allow numbers and max 11 digits
+    if (field === 'emergencyContact') {
+      const cleaned = value.replace(/\D/g, '')
+      if (cleaned.length > 11) return
+      setFormData({
+        ...formData,
+        personalDetails: {
+          ...formData.personalDetails,
+          [field]: cleaned
+        }
+      })
+      return
+    }
+
+    // Employee ID - check for duplicates with debounce
+    if (field === 'employeeId' && section === 'personalDetails') {
+      setFormData({
+        ...formData,
+        personalDetails: {
+          ...formData.personalDetails,
+          [field]: value
+        }
+      })
+      
+      if (value.length < 2) {
+        setEmployeeIdStatus('idle')
+        setEmployeeIdExists(false)
+        return
+      }
+      
+      debouncedCheckEmployeeId(value)
+      return
+    }
+
+    // Username - check for duplicates with debounce
+    if (field === 'username' && section === 'credentials') {
+      setFormData({
+        ...formData,
+        [field]: value
+      })
+      
+      if (value.length < 2) {
+        setUsernameStatus('idle')
+        setUsernameExists(false)
+        return
+      }
+      
+      debouncedCheckUsername(value)
+      return
+    }
+
     if (section === 'personalDetails') {
       setFormData({
         ...formData,
@@ -155,14 +338,12 @@ export default function AddEmployeePage() {
   const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Check if file is PDF
       if (file.type !== 'application/pdf') {
         setError('Please upload a PDF file')
         setTimeout(() => setError(''), 3000)
         return
       }
       
-      // Check file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB')
         setTimeout(() => setError(''), 3000)
@@ -248,7 +429,7 @@ export default function AddEmployeePage() {
       }
       
       const result = await response.json()
-      return result.assetId // Return the asset ID from Sanity
+      return result.assetId
     } catch (error) {
       console.error('Error uploading CV:', error)
       throw error
@@ -264,6 +445,12 @@ export default function AddEmployeePage() {
       setError('Employee ID is required')
       return false
     }
+    
+    if (employeeIdExists) {
+      setError(`❌ Employee ID "${personalDetails.employeeId}" is not available. Please use a different ID.`)
+      return false
+    }
+    
     if (!personalDetails.fullName) {
       setError('Full name is required')
       return false
@@ -276,12 +463,24 @@ export default function AddEmployeePage() {
       setError('CNIC number is required')
       return false
     }
+    if (personalDetails.cnicNumber.length !== 13) {
+      setError('CNIC number must be exactly 13 digits')
+      return false
+    }
     if (!personalDetails.phoneNumber) {
       setError('Phone number is required')
       return false
     }
+    if (personalDetails.phoneNumber.length !== 11) {
+      setError('Phone number must be exactly 11 digits')
+      return false
+    }
     if (!personalDetails.emergencyContact) {
       setError('Emergency contact is required')
+      return false
+    }
+    if (personalDetails.emergencyContact.length !== 11) {
+      setError('Emergency contact must be exactly 11 digits')
       return false
     }
     if (!personalDetails.dateOfBirth) {
@@ -312,6 +511,10 @@ export default function AddEmployeePage() {
       setError('Username is required')
       return false
     }
+    if (usernameExists) {
+      setError(`❌ Username "${username}" is not available. Please choose a different username.`)
+      return false
+    }
     if (!password) {
       setError('Password is required')
       return false
@@ -324,10 +527,6 @@ export default function AddEmployeePage() {
       setError('Passwords do not match')
       return false
     }
-    if (!cvFile) {
-      setError('CV/Resume (PDF) is required')
-      return false
-    }
 
     return true
   }
@@ -337,6 +536,16 @@ export default function AddEmployeePage() {
     setError('')
     setSuccess('')
 
+    // Final checks
+    if (employeeIdExists) {
+      setError(`❌ Employee ID "${formData.personalDetails.employeeId}" is not available. Please use a different ID.`)
+      return
+    }
+    if (usernameExists) {
+      setError(`❌ Username "${formData.username}" is not available. Please choose a different username.`)
+      return
+    }
+
     if (!validateForm()) {
       return
     }
@@ -344,7 +553,6 @@ export default function AddEmployeePage() {
     try {
       setLoading(true)
 
-      // Upload CV first
       let cvAssetId = ''
       if (cvFile) {
         cvAssetId = await uploadCVToSanity(cvFile)
@@ -353,7 +561,7 @@ export default function AddEmployeePage() {
       const payload = {
         personalDetails: {
           ...formData.personalDetails,
-          cv: cvAssetId // Add CV asset ID to personalDetails
+          cv: cvAssetId
         },
         qualifications: formData.qualifications,
         experience: formData.experience,
@@ -376,9 +584,8 @@ export default function AddEmployeePage() {
         throw new Error(result.error || 'Failed to add employee')
       }
 
-      setSuccess('Employee added successfully!')
+      setSuccess('✅ Employee added successfully!')
       
-      // Reset form
       setFormData({
         personalDetails: {
           employeeId: '',
@@ -402,6 +609,10 @@ export default function AddEmployeePage() {
       })
       setCvFile(null)
       setCvFileName('')
+      setEmployeeIdExists(false)
+      setEmployeeIdStatus('idle')
+      setUsernameExists(false)
+      setUsernameStatus('idle')
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -417,6 +628,18 @@ export default function AddEmployeePage() {
       setLoading(false)
     }
   }
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (employeeIdCheckTimeout) {
+        clearTimeout(employeeIdCheckTimeout)
+      }
+      if (usernameCheckTimeout) {
+        clearTimeout(usernameCheckTimeout)
+      }
+    }
+  }, [employeeIdCheckTimeout, usernameCheckTimeout])
 
   const sections = [
     { id: 1, name: 'Personal Details' },
@@ -510,6 +733,7 @@ export default function AddEmployeePage() {
                     Personal Details
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Employee ID with real-time validation */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
                         Employee ID *
@@ -520,10 +744,35 @@ export default function AddEmployeePage() {
                           type="text"
                           value={formData.personalDetails.employeeId}
                           onChange={(e) => handleInputChange('personalDetails', 'employeeId', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className={`w-full pl-10 pr-4 py-2 border focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black ${
+                            employeeIdStatus === 'exists' 
+                              ? 'border-red-500 bg-red-50' 
+                              : employeeIdStatus === 'available'
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="Enter employee ID"
                         />
                       </div>
+                      {/* Employee ID Status Messages */}
+                      {employeeIdStatus === 'checking' && (
+                        <p className="text-xs text-blue-600 mt-1 tracking-wide flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Checking availability...
+                        </p>
+                      )}
+                      {employeeIdStatus === 'available' && formData.personalDetails.employeeId.length >= 2 && (
+                        <p className="text-xs text-green-600 mt-1 tracking-wide flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                           Available
+                        </p>
+                      )}
+                      {employeeIdStatus === 'exists' && (
+                        <p className="text-xs text-red-600 mt-1 tracking-wide flex items-center gap-1">
+                          <X className="w-3 h-3" />
+                         Not Available
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -536,7 +785,7 @@ export default function AddEmployeePage() {
                           type="text"
                           value={formData.personalDetails.fullName}
                           onChange={(e) => handleInputChange('personalDetails', 'fullName', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           placeholder="Enter full name"
                         />
                       </div>
@@ -552,7 +801,7 @@ export default function AddEmployeePage() {
                           type="text"
                           value={formData.personalDetails.fatherName}
                           onChange={(e) => handleInputChange('personalDetails', 'fatherName', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           placeholder="Enter father name"
                         />
                       </div>
@@ -560,50 +809,68 @@ export default function AddEmployeePage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
-                        CNIC Number *
+                        CNIC Number * <span className="text-gray-400 text-xs">(13 digits)</span>
                       </label>
                       <div className="relative">
                         <FileText className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                           type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={13}
                           value={formData.personalDetails.cnicNumber}
                           onChange={(e) => handleInputChange('personalDetails', 'cnicNumber', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
-                          placeholder="Enter CNIC number"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
+                          placeholder="Enter 13-digit CNIC number"
                         />
                       </div>
+                      <p className="text-xs text-gray-500 mt-1 tracking-wide">
+                        Enter exactly 13 digits (e.g., 1234567890123)
+                      </p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
-                        Phone Number *
+                        Phone Number * <span className="text-gray-400 text-xs">(11 digits)</span>
                       </label>
                       <div className="relative">
                         <Phone className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
-                          type="tel"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={11}
                           value={formData.personalDetails.phoneNumber}
                           onChange={(e) => handleInputChange('personalDetails', 'phoneNumber', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
-                          placeholder="Enter phone number"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
+                          placeholder="Enter 11-digit phone number"
                         />
                       </div>
+                      <p className="text-xs text-gray-500 mt-1 tracking-wide">
+                        Enter exactly 11 digits (e.g., 03001234567)
+                      </p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
-                        Emergency Contact *
+                        Emergency Contact * <span className="text-gray-400 text-xs">(11 digits)</span>
                       </label>
                       <div className="relative">
                         <Heart className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
-                          type="tel"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={11}
                           value={formData.personalDetails.emergencyContact}
                           onChange={(e) => handleInputChange('personalDetails', 'emergencyContact', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
-                          placeholder="Enter emergency contact number"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
+                          placeholder="Enter 11-digit emergency contact"
                         />
                       </div>
+                      <p className="text-xs text-gray-500 mt-1 tracking-wide">
+                        Enter exactly 11 digits (e.g., 03001234567)
+                      </p>
                     </div>
 
                     <div>
@@ -616,7 +883,7 @@ export default function AddEmployeePage() {
                           type="date"
                           value={formData.personalDetails.dateOfBirth}
                           onChange={(e) => handleInputChange('personalDetails', 'dateOfBirth', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                         />
                       </div>
                     </div>
@@ -630,7 +897,7 @@ export default function AddEmployeePage() {
                         <select
                           value={formData.personalDetails.maritalStatus}
                           onChange={(e) => handleInputChange('personalDetails', 'maritalStatus', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                         >
                           <option value="">Select Marital Status</option>
                           <option value="Single">Single</option>
@@ -650,7 +917,7 @@ export default function AddEmployeePage() {
                         <textarea
                           value={formData.personalDetails.residentialAddress}
                           onChange={(e) => handleInputChange('personalDetails', 'residentialAddress', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           rows={2}
                           placeholder="Enter residential address"
                         />
@@ -667,7 +934,7 @@ export default function AddEmployeePage() {
                           type="date"
                           value={formData.personalDetails.joiningDate}
                           onChange={(e) => handleInputChange('personalDetails', 'joiningDate', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                         />
                       </div>
                     </div>
@@ -681,7 +948,7 @@ export default function AddEmployeePage() {
                         <select
                           value={formData.personalDetails.department}
                           onChange={(e) => handleInputChange('personalDetails', 'department', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                         >
                           <option value="">Select Department</option>
                           <option value="HR">HR</option>
@@ -705,16 +972,16 @@ export default function AddEmployeePage() {
                           type="text"
                           value={formData.personalDetails.position}
                           onChange={(e) => handleInputChange('personalDetails', 'position', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           placeholder="Enter position/designation"
                         />
                       </div>
                     </div>
 
-                    {/* CV Upload Field */}
+                    {/* CV Upload Field - Optional */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
-                        CV / Resume (PDF) *
+                        CV / Resume (PDF) <span className="text-gray-400 text-xs">(Optional)</span>
                       </label>
                       <div className="relative">
                         <input
@@ -750,8 +1017,8 @@ export default function AddEmployeePage() {
                             </div>
                           )}
                           {!cvFileName && (
-                            <span className="text-sm text-gray-400 tracking-wide">
-                              No file selected (PDF only, max 10MB)
+                            <span className="text-sm text-gray-500 tracking-wide">
+                              No file selected (PDF only, max 10MB) - Optional
                             </span>
                           )}
                         </div>
@@ -763,7 +1030,7 @@ export default function AddEmployeePage() {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1 tracking-wide">
-                        Upload employee CV/Resume in PDF format (Max size: 10MB)
+                        Upload employee CV/Resume in PDF format (Max size: 10MB) - Optional
                       </p>
                     </div>
                   </div>
@@ -797,7 +1064,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newQualification.degree}
                             onChange={(e) => setNewQualification({ ...newQualification, degree: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="e.g., B.Tech, MBA"
                           />
                         </div>
@@ -809,7 +1076,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newQualification.institution}
                             onChange={(e) => setNewQualification({ ...newQualification, institution: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="Enter institution name"
                           />
                         </div>
@@ -821,7 +1088,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newQualification.year}
                             onChange={(e) => setNewQualification({ ...newQualification, year: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="e.g., 2020"
                           />
                         </div>
@@ -833,7 +1100,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newQualification.grade}
                             onChange={(e) => setNewQualification({ ...newQualification, grade: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="e.g., A, 85%"
                           />
                         </div>
@@ -863,8 +1130,8 @@ export default function AddEmployeePage() {
                         <div key={index} className="bg-gray-50 p-4 flex items-center justify-between">
                           <div>
                             <p className="font-medium text-gray-800 tracking-wide">{qual.degree}</p>
-                            <p className="text-sm text-gray-500 tracking-wide">{qual.institution}</p>
-                            <p className="text-sm text-gray-500 tracking-wide">
+                            <p className="text-sm text-gray-600 tracking-wide">{qual.institution}</p>
+                            <p className="text-sm text-gray-600 tracking-wide">
                               {qual.year} {qual.grade ? `• ${qual.grade}` : ''}
                             </p>
                           </div>
@@ -914,7 +1181,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newExperience.company}
                             onChange={(e) => setNewExperience({ ...newExperience, company: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="Enter company name"
                           />
                         </div>
@@ -926,7 +1193,7 @@ export default function AddEmployeePage() {
                             type="text"
                             value={newExperience.position}
                             onChange={(e) => setNewExperience({ ...newExperience, position: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             placeholder="Enter position"
                           />
                         </div>
@@ -938,7 +1205,7 @@ export default function AddEmployeePage() {
                             type="date"
                             value={newExperience.fromDate}
                             onChange={(e) => setNewExperience({ ...newExperience, fromDate: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           />
                         </div>
                         <div>
@@ -949,7 +1216,7 @@ export default function AddEmployeePage() {
                             type="date"
                             value={newExperience.toDate}
                             onChange={(e) => setNewExperience({ ...newExperience, toDate: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           />
                         </div>
                         <div className="md:col-span-2">
@@ -959,7 +1226,7 @@ export default function AddEmployeePage() {
                           <textarea
                             value={newExperience.description}
                             onChange={(e) => setNewExperience({ ...newExperience, description: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                            className="w-full px-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                             rows={2}
                             placeholder="Brief description of your role and responsibilities"
                           />
@@ -990,8 +1257,8 @@ export default function AddEmployeePage() {
                         <div key={index} className="bg-gray-50 p-4 flex items-center justify-between">
                           <div>
                             <p className="font-medium text-gray-800 tracking-wide">{exp.position}</p>
-                            <p className="text-sm text-gray-500 tracking-wide">{exp.company}</p>
-                            <p className="text-sm text-gray-500 tracking-wide">
+                            <p className="text-sm text-gray-600 tracking-wide">{exp.company}</p>
+                            <p className="text-sm text-gray-600 tracking-wide">
                               {exp.fromDate && exp.toDate 
                                 ? `${new Date(exp.fromDate).getFullYear()} - ${new Date(exp.toDate).getFullYear()}`
                                 : 'Date not specified'}
@@ -1026,6 +1293,7 @@ export default function AddEmployeePage() {
                     Login Credentials
                   </h2>
                   <div className="space-y-4">
+                    {/* Username with real-time validation */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 tracking-wide mb-1">
                         Username *
@@ -1036,10 +1304,35 @@ export default function AddEmployeePage() {
                           type="text"
                           value={formData.username}
                           onChange={(e) => handleInputChange('credentials', 'username', e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className={`w-full pl-10 pr-4 py-2 border focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black ${
+                            usernameStatus === 'exists' 
+                              ? 'border-red-500 bg-red-50' 
+                              : usernameStatus === 'available'
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="Enter username"
                         />
                       </div>
+                      {/* Username Status Messages */}
+                      {usernameStatus === 'checking' && (
+                        <p className="text-xs text-blue-600 mt-1 tracking-wide flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          Checking availability...
+                        </p>
+                      )}
+                      {usernameStatus === 'available' && formData.username.length >= 2 && (
+                        <p className="text-xs text-green-600 mt-1 tracking-wide flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                           Available
+                        </p>
+                      )}
+                      {usernameStatus === 'exists' && (
+                        <p className="text-xs text-red-600 mt-1 tracking-wide flex items-center gap-1">
+                          <X className="w-3 h-3" />
+                          Not Available
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -1052,7 +1345,7 @@ export default function AddEmployeePage() {
                           type={showPassword ? 'text' : 'password'}
                           value={formData.password}
                           onChange={(e) => handleInputChange('credentials', 'password', e.target.value)}
-                          className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           placeholder="Enter password (min 6 characters)"
                         />
                         <button
@@ -1078,7 +1371,7 @@ export default function AddEmployeePage() {
                           type={showConfirmPassword ? 'text' : 'password'}
                           value={formData.confirmPassword}
                           onChange={(e) => handleInputChange('credentials', 'confirmPassword', e.target.value)}
-                          className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide"
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none shadow-sm tracking-wide text-black"
                           placeholder="Confirm password"
                         />
                         <button
@@ -1121,7 +1414,7 @@ export default function AddEmployeePage() {
                 {currentSection === 4 && (
                   <button
                     type="submit"
-                    disabled={loading || cvUploading}
+                    disabled={loading || cvUploading || employeeIdExists || checkingEmployeeId || usernameExists || checkingUsername}
                     className="flex-1 px-6 py-2 bg-blue-800 text-white hover:bg-blue-900 transition flex items-center justify-center gap-2 tracking-wider disabled:opacity-50"
                   >
                     {loading || cvUploading ? (

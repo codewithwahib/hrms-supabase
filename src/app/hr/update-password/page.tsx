@@ -2,9 +2,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Footer from '@/app/components/footer'
+import Footer from '@/components/footer'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import NavbarDropdown from '@/app/components/navbar/page'
+import NavbarDropdown from '@/components/navbar'
 import {
   Lock,
   Key,

@@ -88,7 +88,6 @@ export const employee = defineType({
             accept: 'application/pdf',
             storeOriginalFilename: true
           },
-          validation: Rule => Rule.required().assetRequired(),
           description: 'Upload employee CV/Resume in PDF format only',
           fields: [
             {
@@ -254,6 +253,163 @@ export const employee = defineType({
               return {
                 title: title ? `Check-Out: ${new Date(title).toLocaleString()}` : 'Unknown',
                 subtitle: subtitle || 'No location'
+              }
+            }
+          }
+        })
+      ]
+    }),
+
+    // ✅ Site Visit Toggle Button
+    defineField({
+      name: 'enableSiteVisits',
+      title: 'Enable Site Visit Records',
+      type: 'boolean',
+      description: 'Toggle to enable or disable site visit records for this employee',
+      initialValue: false,
+      options: {
+        layout: 'checkbox'
+      }
+    }),
+
+    // ✅ Site Visit Section with Conditional Display
+    defineField({
+      name: 'siteVisits',
+      title: 'Site Visit Records',
+      type: 'array',
+      hidden: ({ parent }) => !parent?.enableSiteVisits,
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'siteVisit',
+          fields: [
+            { 
+              name: 'companyName', 
+              title: 'Company Name', 
+              type: 'string',
+              validation: Rule => Rule.required()
+            },
+            { 
+              name: 'customerName', 
+              title: 'Customer Name', 
+              type: 'string',
+              validation: Rule => Rule.required()
+            },
+            { 
+              name: 'projectName', 
+              title: 'Project Name', 
+              type: 'string'
+            },
+            { 
+              name: 'salesPerson', 
+              title: 'Sales Person', 
+              type: 'string'
+            },
+            { 
+              name: 'visitDate', 
+              title: 'Visit Date', 
+              type: 'date',
+              options: { dateFormat: 'YYYY-MM-DD' },
+              validation: Rule => Rule.required()
+            },
+            { 
+              name: 'fromTime', 
+              title: 'From Time', 
+              type: 'string',
+              description: 'e.g., 09:00 AM',
+              validation: Rule => Rule.required()
+            },
+            { 
+              name: 'toTime', 
+              title: 'To Time', 
+              type: 'string',
+              description: 'e.g., 05:00 PM',
+              validation: Rule => Rule.required()
+            },
+            { 
+              name: 'location', 
+              title: 'Visit Location', 
+              type: 'string',
+              validation: Rule => Rule.required()
+            },
+            // ✅ Live Location Field
+            { 
+              name: 'liveLocation', 
+              title: 'Live Location', 
+              type: 'object',
+              description: 'Real-time GPS location during visit',
+              fields: [
+                { 
+                  name: 'latitude', 
+                  title: 'Latitude', 
+                  type: 'number',
+                  validation: Rule => Rule.required().min(-90).max(90)
+                },
+                { 
+                  name: 'longitude', 
+                  title: 'Longitude', 
+                  type: 'number',
+                  validation: Rule => Rule.required().min(-180).max(180)
+                },
+                { 
+                  name: 'accuracy', 
+                  title: 'Accuracy (meters)', 
+                  type: 'number',
+                  description: 'GPS accuracy in meters'
+                },
+                { 
+                  name: 'timestamp', 
+                  title: 'Location Timestamp', 
+                  type: 'datetime',
+                  initialValue: () => new Date().toISOString()
+                },
+                { 
+                  name: 'address', 
+                  title: 'Address from GPS', 
+                  type: 'text',
+                  description: 'Reverse geocoded address'
+                }
+              ],
+              preview: {
+                select: {
+                  title: 'address',
+                  subtitle: 'timestamp'
+                },
+                prepare(selection) {
+                  const { title, subtitle } = selection
+                  return {
+                    title: title || 'No address available',
+                    subtitle: subtitle ? `Captured: ${new Date(subtitle).toLocaleString()}` : 'No timestamp'
+                  }
+                }
+              }
+            },
+            // ✅ Follow-Ups Section (Simplified like Visit Notes)
+            { 
+              name: 'followUps', 
+              title: 'Follow-Ups', 
+              type: 'text',
+              description: 'Enter follow-up notes for this site visit'
+            },
+            { 
+              name: 'notes', 
+              title: 'Visit Notes', 
+              type: 'text',
+              description: 'Additional notes about the site visit'
+            }
+          ],
+          preview: {
+            select: {
+              title: 'companyName',
+              subtitle: 'customerName',
+              description: 'projectName'
+            },
+            prepare(selection) {
+              const { title, subtitle, description } = selection
+              return {
+                title: title || 'Unknown Company',
+                subtitle: subtitle ? `Customer: ${subtitle}` : 'No customer',
+                description: description ? `Project: ${description}` : 'No project'
               }
             }
           }

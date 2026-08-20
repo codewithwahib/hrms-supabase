@@ -22,6 +22,7 @@ import {
   History,
   FileText,
   ListChecks,
+  MapPin,
 } from 'lucide-react'
 
 import { Roboto } from 'next/font/google'
@@ -67,12 +68,8 @@ export default function NavbarDropdown() {
   const profileRef = useRef<HTMLDivElement>(null)
   const attendanceRef = useRef<HTMLDivElement>(null)
   const leavesRef = useRef<HTMLDivElement>(null)
+  const siteVisitRef = useRef<HTMLDivElement>(null)
 
-  /*
-   * IMPORTANT
-   * This ref stores ONLY the logged-in employee ID.
-   * URL ID is never used.
-   */
   const employeeIdRef = useRef<string>('')
 
   // ============================================================
@@ -96,7 +93,6 @@ export default function NavbarDropdown() {
       return
     }
 
-    // Store only login ID
     employeeIdRef.current = loggedInId
     setEmployeeId(loggedInId)
   }, [])
@@ -232,6 +228,34 @@ export default function NavbarDropdown() {
     },
 
     {
+      name: 'SITE VISIT',
+      href: '#',
+      icon: (
+        <MapPin className="w-5 h-5" />
+      ),
+      children: [
+        {
+          name: 'New Site Visit',
+          href: stableId
+            ? `/site-visit/${stableId}`
+            : '#',
+          icon: (
+            <MapPin className="w-4 h-4" />
+          ),
+        },
+        {
+          name: 'Site Visit History',
+          href: stableId
+            ? `/site-visit-history/${stableId}`
+            : '#',
+          icon: (
+            <ListChecks className="w-4 h-4" />
+          ),
+        },
+      ],
+    },
+
+    {
       name: 'PAYROLL',
       href: stableId
         ? `/`
@@ -283,9 +307,6 @@ export default function NavbarDropdown() {
   const handleNavigation = (href: string) => {
     if (!href || href === '#') return
 
-    /*
-     * Never navigate if login ID does not exist.
-     */
     const loginId = getEmployeeId()
 
     if (!loginId) {
@@ -356,6 +377,20 @@ export default function NavbarDropdown() {
         !leavesRef.current.contains(target)
       ) {
         leavesDropdown.style.display =
+          'none'
+      }
+
+      const siteVisitDropdown =
+        document.getElementById(
+          'dropdown-SITE VISIT'
+        )
+
+      if (
+        siteVisitDropdown &&
+        siteVisitRef.current &&
+        !siteVisitRef.current.contains(target)
+      ) {
+        siteVisitDropdown.style.display =
           'none'
       }
     }
@@ -497,7 +532,7 @@ export default function NavbarDropdown() {
                     !isMobileMenuOpen
                   )
                 }
-                className="p-1.5 rounded-lg hover:bg-gray-200 transition lg:hidden"
+                className="p-1.5 hover:text-blue-700 transition lg:hidden"
                 disabled={isNavigating}
               >
                 <Menu className="w-5 h-5 text-gray-700" />
@@ -550,7 +585,9 @@ export default function NavbarDropdown() {
                         item.name ===
                         'ATTENDANCE'
                           ? attendanceRef
-                          : leavesRef
+                          : item.name === 'LEAVES'
+                          ? leavesRef
+                          : siteVisitRef
                       }
                       className="relative"
                     >
@@ -617,11 +654,11 @@ export default function NavbarDropdown() {
 
                       </button>
 
-                      {/* DROPDOWN */}
+                      {/* DROPDOWN - No border-radius, hover text only */}
 
                       <div
                         id={`dropdown-${item.name}`}
-                        className="nav-dropdown absolute left-1/2 transform -translate-x-1/2 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 hidden"
+                        className="nav-dropdown absolute left-1/2 transform -translate-x-1/2 mt-2 w-56 bg-white shadow-lg border border-gray-200 py-2 z-50 hidden"
                       >
 
                         {item.children.map(
@@ -638,15 +675,15 @@ export default function NavbarDropdown() {
                                 flex items-center
                                 gap-3 px-4
                                 py-2.5
-                                transition
+                                transition-colors
                                 w-full
                                 text-left
                                 ${
                                   isActive(
                                     child.href
                                   )
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-gray-700 hover:bg-gray-200 hover:text-blue-700'
+                                    ? 'text-blue-700'
+                                    : 'text-gray-700 hover:text-blue-700'
                                 }
                               `}
                               disabled={
@@ -661,7 +698,7 @@ export default function NavbarDropdown() {
                                     child.href
                                   )
                                     ? 'text-blue-700'
-                                    : 'text-gray-400'
+                                    : 'text-gray-400 hover:text-blue-700'
                                 }
                               >
                                 {child.icon}
@@ -767,7 +804,7 @@ export default function NavbarDropdown() {
                       !isProfileDropdownOpen
                     )
                   }
-                  className="p-2 rounded-lg hover:bg-gray-200 transition text-gray-500 hover:text-blue-700"
+                  className="p-2 hover:text-blue-700 transition text-gray-500"
                   title={displayName}
                   disabled={isNavigating}
                 >
@@ -776,7 +813,7 @@ export default function NavbarDropdown() {
 
                 {isProfileDropdownOpen && (
 
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white shadow-lg border border-gray-200 py-2 z-50">
 
                     {/* EMPLOYEE INFO */}
 
@@ -812,8 +849,7 @@ export default function NavbarDropdown() {
                       className={`
                         flex items-center gap-3
                         px-4 py-2
-                        hover:bg-gray-200
-                        transition
+                        transition-colors
                         text-sm
                         text-gray-700
                         hover:text-blue-700
@@ -828,6 +864,39 @@ export default function NavbarDropdown() {
                     >
                       <LayoutDashboard className="w-4 h-4" />
                       Dashboard
+                    </Link>
+
+                    {/* Site Visit */}
+
+                    <Link
+                      href={
+                        stableId
+                          ? `/site-visit/${stableId}`
+                          : '#'
+                      }
+                      onClick={() =>
+                        setIsProfileDropdownOpen(
+                          false
+                        )
+                      }
+                      className={`
+                        flex items-center gap-3
+                        px-4 py-2
+                        transition-colors
+                        text-sm
+                        text-gray-700
+                        hover:text-blue-700
+                        w-full
+                        ${roboto.className}
+                        ${
+                          !stableId
+                            ? 'pointer-events-none opacity-50'
+                            : ''
+                        }
+                      `}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Site Visit
                     </Link>
 
                     {/* SETTINGS */}
@@ -846,8 +915,7 @@ export default function NavbarDropdown() {
                       className={`
                         flex items-center gap-3
                         px-4 py-2
-                        hover:bg-gray-200
-                        transition
+                        transition-colors
                         text-sm
                         text-gray-700
                         hover:text-blue-700
@@ -874,10 +942,10 @@ export default function NavbarDropdown() {
                         flex items-center
                         gap-3
                         px-4 py-2
-                        hover:bg-red-100
-                        transition
+                        transition-colors
                         text-sm
                         text-red-600
+                        hover:text-red-800
                         w-full
                         text-left
                         ${roboto.className}
@@ -950,7 +1018,7 @@ export default function NavbarDropdown() {
                 onClick={() =>
                   setIsMobileMenuOpen(false)
                 }
-                className="p-2 rounded-lg hover:bg-gray-200 transition"
+                className="p-2 hover:text-blue-700 transition"
               >
                 <X className="w-5 h-5 text-gray-700" />
               </button>
@@ -1012,14 +1080,13 @@ export default function NavbarDropdown() {
                             justify-between
                             px-3
                             py-2.5
-                            rounded-lg
-                            transition
+                            transition-colors
                             ${
                               isChildActive(
                                 item.children
                               )
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
+                                ? 'text-blue-700'
+                                : 'text-gray-600 hover:text-blue-700'
                             }
                           `}
                           disabled={
@@ -1069,14 +1136,13 @@ export default function NavbarDropdown() {
                                   gap-3
                                   px-3
                                   py-2
-                                  rounded-lg
-                                  transition
+                                  transition-colors
                                   ${
                                     isActive(
                                       child.href
                                     )
-                                      ? 'bg-blue-100 text-blue-700'
-                                      : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
+                                      ? 'text-blue-700'
+                                      : 'text-gray-600 hover:text-blue-700'
                                   }
                                 `}
                               >
@@ -1112,12 +1178,11 @@ export default function NavbarDropdown() {
                           gap-3
                           px-3
                           py-2.5
-                          rounded-lg
-                          transition
+                          transition-colors
                           ${
                             isActive(item.href)
-                              ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-700'
-                              : 'text-gray-600 hover:bg-gray-200 hover:text-blue-700'
+                              ? 'text-blue-700 border-l-4 border-blue-700'
+                              : 'text-gray-600 hover:text-blue-700'
                           }
                           ${
                             !stableId
@@ -1154,7 +1219,7 @@ export default function NavbarDropdown() {
 
               <div className="flex items-center gap-3">
 
-                <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white">
+                <div className="w-10 h-10 bg-blue-700 flex items-center justify-center text-white">
                   <User className="w-5 h-5" />
                 </div>
 
@@ -1176,7 +1241,7 @@ export default function NavbarDropdown() {
 
                 <button
                   onClick={handleLogout}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-red-600"
+                  className="p-2 hover:text-red-600 transition text-gray-400"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>

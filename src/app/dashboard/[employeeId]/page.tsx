@@ -2226,7 +2226,7 @@ export default function EmployeeDashboardPage() {
                     <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">ID</th>
                     <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Dept</th>
                     <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    {/* <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Location</th> */}
                     <th className="px-2.5 py-1.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">Time</th>
                   </tr>
                 </thead>
@@ -2269,9 +2269,9 @@ export default function EmployeeDashboardPage() {
                           {activity.type === 'check-in' ? 'In' : 'Out'}
                         </span>
                       </td>
-                      <td className="px-2.5 py-1.5 text-[10px] text-gray-600 max-w-[100px] truncate tracking-wide">
+                      {/* <td className="px-2.5 py-1.5 text-[10px] text-gray-600 max-w-[100px] truncate tracking-wide">
                         {activity.location}
-                      </td>
+                      </td> */}
                       <td className="px-2.5 py-1.5 text-[10px] text-gray-500 tracking-wide">
                         {formatTime(activity.time)}
                       </td>

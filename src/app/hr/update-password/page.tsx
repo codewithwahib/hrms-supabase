@@ -306,7 +306,7 @@ export default function UpdatePasswordPage() {
                       ...formData,
                       username: e.target.value
                     })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
+                    className="w-full pl-10 pr-4 py-2 border text-black border-gray-300 focus:ring-2 focus:ring-[#0071BD] focus:border-transparent outline-none tracking-wide"
                     placeholder="Enter username"
                   />
                 </div>

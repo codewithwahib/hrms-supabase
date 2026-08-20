@@ -5,3 +5,8 @@ import login from './login'
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [employee,login],
 }
+
+
+
+
+

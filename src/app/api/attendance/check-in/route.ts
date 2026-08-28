@@ -1,5 +1,6 @@
+// // app/api/attendance/check-in/route.ts
 // import { NextRequest, NextResponse } from 'next/server'
-// import { client } from '@/sanity/lib/client'
+// import { createClient } from '@supabase/supabase-js'
 
 // export async function POST(request: NextRequest) {
 //   try {
@@ -40,23 +41,31 @@
 //       )
 //     }
 
-//     // Find employee
-//     const employee = await client.fetch(
-//       `*[
-//         _type == "employee" &&
-//         personalDetails.employeeId == $employeeId
-//       ][0]{
-//         _id,
-//         personalDetails,
-//         checkIn
-//       }`,
-//       {
-//         employeeId,
-//       }
+//     // Initialize Supabase client
+//     const supabase = createClient(
+//       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 //     )
 
-//     console.log('FOUND EMPLOYEE:')
-//     console.log(employee)
+//     // ✅ Find employee
+//     const { data: employee, error: fetchError } = await supabase
+//       .from('employees')
+//       .select('id, employee_id, full_name, check_in')
+//       .eq('employee_id', employeeId)
+//       .maybeSingle()
+
+//     console.log('FOUND EMPLOYEE:', employee)
+
+//     if (fetchError) {
+//       console.error('Fetch error:', fetchError)
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           error: `Database error: ${fetchError.message}`,
+//         },
+//         { status: 500 }
+//       )
+//     }
 
 //     if (!employee) {
 //       return NextResponse.json(
@@ -68,25 +77,59 @@
 //       )
 //     }
 
-//     // Create check-in record
-//     const checkInRecord = {
-//       _type: 'checkInRecord',
-//       _key: `check-in-${Date.now()}`,
-//       time: new Date().toISOString(),
-//       location: location,
+//     // ✅ Check if already checked in today
+//     const today = new Date().toISOString().split('T')[0]
+//     const checkIns = employee.check_in || []
+    
+//     const alreadyCheckedIn = checkIns.some((record: any) => {
+//       return record.time && record.time.split('T')[0] === today
+//     })
+
+//     if (alreadyCheckedIn) {
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           error: 'You have already checked in today!',
+//         },
+//         { status: 400 }
+//       )
 //     }
 
-//     console.log('NEW CHECK-IN RECORD:')
-//     console.log(checkInRecord)
+//     // ✅ Create check-in record
+//     const newCheckIn = {
+//       time: new Date().toISOString(),
+//       location: location,
+//       coordinates: {
+//         lat: latitude || null,
+//         lng: longitude || null
+//       }
+//     }
 
-//     // Save to Sanity
-//     const updatedEmployee = await client
-//       .patch(employee._id)
-//       .setIfMissing({
-//         checkIn: [],
+//     console.log('NEW CHECK-IN RECORD:', newCheckIn)
+
+//     // ✅ Update employee with new check-in
+//     const updatedCheckIns = [...checkIns, newCheckIn]
+
+//     const { data: updatedEmployee, error: updateError } = await supabase
+//       .from('employees')
+//       .update({
+//         check_in: updatedCheckIns,
+//         updated_at: new Date().toISOString()
 //       })
-//       .append('checkIn', [checkInRecord])
-//       .commit()
+//       .eq('id', employee.id)
+//       .select()
+//       .single()
+
+//     if (updateError) {
+//       console.error('Update error:', updateError)
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           error: `Failed to save check-in: ${updateError.message}`,
+//         },
+//         { status: 500 }
+//       )
+//     }
 
 //     console.log('CHECK-IN COMMIT SUCCESS')
 //     console.log(updatedEmployee)
@@ -95,23 +138,20 @@
 //       success: true,
 //       message: 'Check-in saved successfully',
 //       data: {
-//         employeeId,
-//         employeeDocumentId: employee._id,
-//         record: checkInRecord,
-//         latitude,
-//         longitude,
+//         employeeId: employee.employee_id,
+//         record: newCheckIn,
 //       },
 //     })
+
 //   } catch (error) {
 //     console.error('CHECK-IN ERROR:', error)
 
 //     return NextResponse.json(
 //       {
 //         success: false,
-//         error:
-//           error instanceof Error
-//             ? error.message
-//             : 'Failed to save check-in',
+//         error: error instanceof Error
+//           ? error.message
+//           : 'Failed to save check-in',
 //       },
 //       { status: 500 }
 //     )
@@ -134,14 +174,6 @@ export async function POST(request: NextRequest) {
       longitude,
     } = body
 
-    console.log('==============================')
-    console.log('CHECK-IN REQUEST')
-    console.log('Employee ID:', employeeId)
-    console.log('Location:', location)
-    console.log('Latitude:', latitude)
-    console.log('Longitude:', longitude)
-    console.log('==============================')
-
     if (!employeeId) {
       return NextResponse.json(
         {
@@ -162,24 +194,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Initialize Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // Find employee
     const { data: employee, error: fetchError } = await supabase
       .from('employees')
-      .select('id, employee_id, check_in')
+      .select('id, employee_id, full_name, check_in')
       .eq('employee_id', employeeId)
       .maybeSingle()
 
-    console.log('FOUND EMPLOYEE:')
-    console.log(employee)
-
     if (fetchError) {
-      console.error('Fetch error:', fetchError)
       return NextResponse.json(
         {
           success: false,
@@ -199,25 +225,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create check-in record
-    const checkInRecord = {
-      _key: `check-in-${Date.now()}`,
-      time: new Date().toISOString(),
-      location: location,
-      coordinates: latitude && longitude ? {
-        lat: latitude,
-        lng: longitude
-      } : undefined
+    const today = new Date().toISOString().split('T')[0]
+    const checkIns = employee.check_in || []
+    
+    const alreadyCheckedIn = checkIns.some((record: any) => {
+      return record.time && record.time.split('T')[0] === today
+    })
+
+    if (alreadyCheckedIn) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You have already checked in today!',
+        },
+        { status: 400 }
+      )
     }
 
-    console.log('NEW CHECK-IN RECORD:')
-    console.log(checkInRecord)
+    const newCheckIn = {
+      time: new Date().toISOString(),
+      location: location,
+      coordinates: {
+        lat: latitude || null,
+        lng: longitude || null
+      }
+    }
 
-    // Get existing check-ins or initialize empty array
-    const existingCheckIns = employee.check_in || []
-    const updatedCheckIns = [...existingCheckIns, checkInRecord]
+    const updatedCheckIns = [...checkIns, newCheckIn]
 
-    // Update employee in Supabase
     const { data: updatedEmployee, error: updateError } = await supabase
       .from('employees')
       .update({
@@ -229,7 +264,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (updateError) {
-      console.error('Update error:', updateError)
       return NextResponse.json(
         {
           success: false,
@@ -239,30 +273,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('CHECK-IN COMMIT SUCCESS')
-    console.log(updatedEmployee)
-
     return NextResponse.json({
       success: true,
       message: 'Check-in saved successfully',
       data: {
-        employeeId,
-        employeeDocumentId: employee.id,
-        record: checkInRecord,
-        latitude,
-        longitude,
+        employeeId: employee.employee_id,
+        record: newCheckIn,
       },
     })
-  } catch (error) {
-    console.error('CHECK-IN ERROR:', error)
 
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to save check-in',
+        error: error instanceof Error
+          ? error.message
+          : 'Failed to save check-in',
       },
       { status: 500 }
     )

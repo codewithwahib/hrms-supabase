@@ -1,9 +1,12 @@
 // app/api/upload-cv/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { client } from '@/sanity/lib/client' // Changed from serverClient to client
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 Upload API called')
+    
+    // Get file
     const formData = await request.formData()
     const file = formData.get('file') as File
     
@@ -14,7 +17,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
+    // Validate
     if (file.type !== 'application/pdf') {
       return NextResponse.json(
         { success: false, error: 'Only PDF files are allowed' },
@@ -22,7 +25,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
         { success: false, error: 'File size must be less than 10MB' },
@@ -30,30 +32,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert File to Buffer for Sanity upload
+    // Create Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    
+    // Upload
+    const fileName = `cv-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.pdf`
+    const filePath = `cvs/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
     
-    // Upload to Sanity
-    const asset = await client.assets.upload('file', buffer, { // Changed from serverClient to client
-      filename: file.name,
-      contentType: file.type
-    })
+    const { data, error } = await supabase.storage
+      .from('cvs')
+      .upload(filePath, buffer, {
+        contentType: 'application/pdf',
+        cacheControl: '3600'
+      })
 
-    console.log('CV uploaded successfully:', asset)
+    if (error) {
+      console.error('Upload error:', error)
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('cvs')
+      .getPublicUrl(filePath)
 
     return NextResponse.json({
       success: true,
       message: 'CV uploaded successfully',
-      assetId: asset._id,
-      asset: asset
+      assetId: data?.path,
+      url: publicUrl,
+      path: filePath
     })
 
   } catch (error) {
-    console.error('Error uploading CV:', error)
+    console.error('Error:', error)
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to upload CV' 
+        error: error instanceof Error ? error.message : 'Upload failed' 
       },
       { status: 500 }
     )

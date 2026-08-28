@@ -1,46 +1,8 @@
-// // app/api/hr/check-employee-id/route.ts
-// import { NextRequest, NextResponse } from 'next/server'
-// import { client } from '@/sanity/lib/client'
-
-// export async function GET(request: NextRequest) {
-//   try {
-//     const searchParams = request.nextUrl.searchParams
-//     const employeeId = searchParams.get('employeeId')
-
-//     if (!employeeId) {
-//       return NextResponse.json(
-//         { error: 'Employee ID is required' },
-//         { status: 400 }
-//       )
-//     }
-
-//     const query = `
-//       *[_type == "employee" && personalDetails.employeeId == $employeeId][0] {
-//         _id
-//       }
-//     `
-
-//     const result = await client.fetch(query, { employeeId })
-
-//     return NextResponse.json({
-//       exists: !!result,
-//       employeeId
-//     })
-//   } catch (error) {
-//     console.error('Error checking employee ID:', error)
-//     return NextResponse.json(
-//       { error: 'Failed to check employee ID' },
-//       { status: 500 }
-//     )
-//   }
-// }
-
-
 // app/api/hr/check-employee/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { client } from '@/sanity/lib/client'
+import { createClient } from '@/utils/supabase/server' // or your supabase client path
 
-export const dynamic = 'force-dynamic' // ✅ Add this line
+export const dynamic = 'force-dynamic' // ✅ Same - stays as is
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,16 +16,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const query = `
-      *[_type == "employee" && personalDetails.employeeId == $employeeId][0] {
-        _id
-      }
-    `
+    // ✅ Supabase equivalent - check if employee exists
+    const supabase = await createClient() // or your supabase client
+    
+    const { data, error } = await supabase
+      .from('employees') // your table name (could be 'employee' too)
+      .select('id')
+      .eq('personalDetails->>employeeId', employeeId) // or just .eq('employee_id', employeeId) if flat field
+      .maybeSingle() // returns null if not found, instead of error
 
-    const result = await client.fetch(query, { employeeId })
+    if (error) {
+      console.error('Supabase error:', error)
+      return NextResponse.json(
+        { error: 'Failed to check employee ID' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
-      exists: !!result,
+      exists: !!data,
       employeeId
     })
   } catch (error) {

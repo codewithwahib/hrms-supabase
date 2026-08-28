@@ -1,3 +1,4 @@
+// context/AuthContext.tsx
 'use client'
 
 import {
@@ -13,6 +14,7 @@ type UserRole = 'hr'
 interface User {
   username: string
   role: UserRole
+  id?: string
 }
 
 interface AuthContextType {
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser({
             username: parsedUser.username,
             role: 'hr',
+            id: parsedUser.id || undefined,
           })
         } else {
           localStorage.removeItem('hrms_user')
@@ -56,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/hr-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,11 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem('hrms_user')
     setUser(null)
-    
-    // Call logout API to clear any cookies
-    fetch('/api/auth/logout', { method: 'POST' }).catch(console.error)
-    
-    router.push('/login')
+    router.push('/hr/login')
   }
 
   return (

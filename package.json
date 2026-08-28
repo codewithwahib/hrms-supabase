@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@sanity/client": "6.28.3",
+    "@sanity/client": "^6.28.3",
     "@sanity/image-url": "1.2.0",
     "@sanity/vision": "3.71.1",
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.112.4",
     "html2pdf.js": "^0.14.0",
     "lucide-react": "0.577.0",
     "next": "14.2.16",
@@ -21,7 +23,9 @@
     "react-icons": "5.6.0",
     "recharts": "3.10.1",
     "sanity": "3.99.0",
-    "styled-components": "6.3.8"
+    "styled-components": "6.3.8",
+    "zk-attendance-sdk": "^2.3.0",
+    "zkteco-js": "^1.7.2"
   },
   "devDependencies": {
     "@types/node": "^20",
